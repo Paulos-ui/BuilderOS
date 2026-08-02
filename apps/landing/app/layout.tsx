@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     "BuilderOS discovers grants, hackathons, and funding opportunities, helps you prepare stronger applications, and turns your shipped work into verifiable on-chain reputation — through a coordinated system of specialized AI agents.",
   metadataBase: new URL("https://builderos.dev"),
   openGraph: {
-    title: "BuilderOS — The AI-Native Operating System for Web3 Builders",
+    title: "BuilderOS: The AI-Native Operating System for Web3 Builders",
     description:
       "Discover. Apply. Prove. Build reputation. A coordinated system of AI agents for Web3 builders.",
     type: "website",
