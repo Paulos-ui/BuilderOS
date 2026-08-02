@@ -38,7 +38,7 @@ export default function CTAFooter() {
         </h2>
         <p className="mt-5 max-w-lg text-balance font-body text-lg text-paper-dim">
           Private beta is limited to a few hundred builders at launch.
-          Connect a wallet or drop your email — BuilderScout starts working
+          Connect a wallet or drop your email, BuilderScout starts working
           the moment you do.
         </p>
 
@@ -73,7 +73,7 @@ export default function CTAFooter() {
 
         <div className="mt-6 flex items-center gap-2 font-mono text-[11px] tracking-widest text-paper-dim/50">
           <span className="h-1.5 w-1.5 rounded-full bg-signal" />
-          OR CONNECT WALLET — SUPPORTS GOAT NETWORK
+          OR CONNECT WALLET SUPPORTS GOAT NETWORK
         </div>
       </div>
 

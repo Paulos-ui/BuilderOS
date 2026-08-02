@@ -48,7 +48,7 @@ export default function ProblemSection() {
           <p className="mt-6 text-balance font-body text-lg text-paper-dim">
             The best grants and bounties are scattered across a hundred
             Discords, Notion boards, and quote-tweets. Builders lose weeks to
-            search instead of shipping — and miss deadlines they never even
+            search instead of shipping  and miss deadlines they never even
             saw.
           </p>
         </motion.div>

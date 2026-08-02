@@ -8,7 +8,7 @@ const DOC_SECTIONS = [
     tab: "VISION",
     title: "Why BuilderOS exists",
     body: [
-      "Web3's best opportunities are distributed across hundreds of Discords, Notion boards, and ecosystem blogs — and the strongest builders don't always win, the fastest searchers do.",
+      "Web3's best opportunities are distributed across hundreds of Discords, Notion boards, and ecosystem blogs  and the strongest builders don't always win, the fastest searchers do.",
       "BuilderOS closes that gap with a coordinated system of specialized agents instead of one generalist assistant, because discovery, application quality, collaboration, and reputation are genuinely different problems that need different tools working from the same builder profile.",
     ],
   },
@@ -16,7 +16,7 @@ const DOC_SECTIONS = [
     tab: "HOW IT WORKS",
     title: "Agents, not a single assistant",
     body: [
-      "Your builder profile — repos, past grants, skills, chain activity — is the shared context every agent reads from and writes back to.",
+      "Your builder profile  repos, past grants, skills, chain activity — is the shared context every agent reads from and writes back to.",
       "BuilderScout ranks opportunities against that profile. ProofForge scores and drafts your submission. BuilderFlow tracks the logistics. BuilderRep records the outcome as structured proof. Each agent hands off structured state to the next — no copy-pasting between five tabs.",
     ],
   },
@@ -24,7 +24,7 @@ const DOC_SECTIONS = [
     tab: "USER GUIDE",
     title: "Getting started",
     body: [
-      "1. Connect a wallet or email, then link your GitHub — this becomes the seed of your builder profile.",
+      "1. Connect a wallet or email, then link your GitHub this becomes the seed of your builder profile.",
       "2. BuilderScout surfaces a ranked feed of grants, hackathons, and bounties within minutes.",
       "3. Open any opportunity into ProofForge to get an application score, gap analysis, and a generated first draft.",
       "4. Track deadlines in BuilderFlow, and once you ship, BuilderRep mints the attestation automatically.",
