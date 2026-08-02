@@ -1,0 +1,25 @@
+# dependencies
+node_modules/
+
+# environment variables (NEVER COMMIT YOUR KEYS)
+.env
+.env.*
+!.env.example
+
+# Next.js & build outputs
+.next/
+out/
+dist/
+build/
+
+# Prisma local databases
+prisma/*.db
+prisma/*.db-journal
+
+# logs and OS files
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Patch backups
+.patch-backup-*/

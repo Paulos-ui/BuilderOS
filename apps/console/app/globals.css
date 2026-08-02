@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+@theme {
+  /* Shared BuilderOS token system — identical to the marketing site so the
+     product and the landing page read as one thing. */
+  --color-ink: #0b1420;
+  --color-ink-2: #0f1c2c;
+  --color-ink-3: #14263a;
+  --color-paper: #eae4d3;
+  --color-paper-dim: #cdc6b0;
+  --color-line: #3e7ca6;
+  --color-line-bright: #6fb3e0;
+  --color-brass: #b8863b;
+  --color-brass-bright: #d9a856;
+  --color-signal: #6fa98a;
+  --color-signal-bright: #8fcbab;
+  --color-danger: #b3573f;
+
+  --font-display: var(--font-sora);
+  --font-body: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
+}
+
+html,
+body {
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font-family: var(--font-body);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-ink);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border: 2px solid var(--color-ink);
+}
+
+::selection {
+  background: var(--color-brass);
+  color: var(--color-ink);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Faint grid, carried over from the drafting-table backdrop */
+.bp-grid {
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--color-line) 10%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--color-line) 10%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 48px 48px;
+}
+
+/* Rack module surface — subtle top highlight reads as brushed metal */
+.rack-surface {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--color-line) 6%, var(--color-ink-2)),
+    var(--color-ink-2)
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

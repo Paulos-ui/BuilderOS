@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: builderos
+      POSTGRES_PASSWORD: builderos
+      POSTGRES_DB: builderos
+    ports:
+      - "5432:5432"
+    volumes:
+      - builderos_pg_data:/var/lib/postgresql/data
+      - ./prisma/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U builderos"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+volumes:
+  builderos_pg_data:

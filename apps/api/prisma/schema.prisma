@@ -1,0 +1,232 @@
+// BuilderOS Core Platform — Prisma schema
+// Mirrors Section 4 of docs/BuilderOS_Blueprint.md
+//
+// Requires the pgvector extension on the target Postgres instance:
+//   CREATE EXTENSION IF NOT EXISTS vector;
+// Managed providers: Neon and Supabase both support this out of the box.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+enum AuthProvider {
+  EMAIL
+  WALLET
+  BOTH
+}
+
+enum OpportunityCategory {
+  GRANT
+  HACKATHON
+  BOUNTY
+  ACCELERATOR
+  ECOSYSTEM_FUND
+}
+
+enum OpportunityStatus {
+  OPEN
+  CLOSED
+  STALE
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SCORED
+  SUBMITTED
+  WON
+  REJECTED
+}
+
+enum AttestationType {
+  GRANT_COMPLETED
+  CONTRIBUTION_VERIFIED
+}
+
+enum PaymentStatus {
+  PENDING
+  SETTLED
+  FAILED
+}
+
+model User {
+  id            String        @id @default(uuid())
+  email         String?       @unique
+  walletAddress String?       @unique @map("wallet_address")
+  authProvider  AuthProvider  @default(EMAIL) @map("auth_provider")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  deletedAt     DateTime?     @map("deleted_at")
+
+  builderProfile BuilderProfile?
+  authNonces     AuthNonce[]
+
+  @@map("users")
+}
+
+/// Single-use nonces for SIWE-style wallet signature challenges.
+model AuthNonce {
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")
+  address   String
+  nonce     String   @unique
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([address])
+  @@map("auth_nonces")
+}
+
+/// Single-use tokens for passwordless email magic-link sign-in.
+model MagicLinkToken {
+  id        String    @id @default(uuid())
+  email     String
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([email])
+  @@map("magic_link_tokens")
+}
+
+model BuilderProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique @map("user_id")
+  githubUsername String?  @map("github_username")
+  chains         Json     @default("[]")
+  languages      Json     @default("[]")
+  bio            String?
+  /// pgvector embedding for opportunity-matching similarity search.
+  /// Unsupported by Prisma Client's query builder directly — read/write via
+  /// $queryRaw / $executeRaw (see src/profiles/profiles.repository.ts).
+  embedding      Unsupported("vector(1536)")?
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user               User                @relation(fields: [userId], references: [id])
+  opportunityMatches OpportunityMatch[]
+  applications       Application[]
+  attestations       Attestation[]
+  payments           Payment[]
+
+  @@map("builder_profiles")
+}
+
+model Opportunity {
+  id             String              @id @default(uuid())
+  sourceUrl      String              @map("source_url")
+  sourceName     String              @map("source_name")
+  title          String
+  description    String
+  category       OpportunityCategory
+  chains         Json                @default("[]")
+  fundingMin     Decimal?            @map("funding_min")
+  fundingMax     Decimal?            @map("funding_max")
+  deadline       DateTime?
+  eligibility    Json                @default("{}")
+  lastVerifiedAt DateTime            @map("last_verified_at")
+  status         OpportunityStatus   @default(OPEN)
+  /// pgvector embedding of the opportunity description, used for hybrid
+  /// similarity + structured-filter retrieval (Blueprint Section 6.4).
+  embedding      Unsupported("vector(1536)")?
+  createdAt      DateTime            @default(now()) @map("created_at")
+
+  matches      OpportunityMatch[]
+  applications Application[]
+
+  @@index([deadline, status])
+  @@map("opportunities")
+}
+
+model OpportunityMatch {
+  id               String   @id @default(uuid())
+  builderProfileId String   @map("builder_profile_id")
+  opportunityId    String   @map("opportunity_id")
+  score            Decimal
+  reason           Json     @default("{}")
+  saved            Boolean  @default(false)
+  dismissed        Boolean  @default(false)
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  builderProfile BuilderProfile @relation(fields: [builderProfileId], references: [id])
+  opportunity    Opportunity    @relation(fields: [opportunityId], references: [id])
+
+  @@unique([builderProfileId, opportunityId])
+  @@map("opportunity_matches")
+}
+
+model Application {
+  id               String            @id @default(uuid())
+  builderProfileId String            @map("builder_profile_id")
+  opportunityId    String            @map("opportunity_id")
+  status           ApplicationStatus @default(DRAFT)
+  content          Json              @default("{}")
+  score            Decimal?
+  scoreBreakdown   Json?             @map("score_breakdown")
+  modelVersion     String?           @map("model_version")
+  promptVersion    String?           @map("prompt_version")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  builderProfile BuilderProfile @relation(fields: [builderProfileId], references: [id])
+  opportunity    Opportunity    @relation(fields: [opportunityId], references: [id])
+  attestations   Attestation[]
+
+  @@index([builderProfileId, status])
+  @@map("applications")
+}
+
+model Attestation {
+  id               String          @id @default(uuid())
+  builderProfileId String          @map("builder_profile_id")
+  applicationId    String?         @map("application_id")
+  type             AttestationType
+  chainTxHash      String?         @map("chain_tx_hash")
+  issuedAt         DateTime        @default(now()) @map("issued_at")
+  metadata         Json            @default("{}")
+
+  builderProfile BuilderProfile @relation(fields: [builderProfileId], references: [id])
+  application    Application?   @relation(fields: [applicationId], references: [id])
+
+  @@map("attestations")
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  fromRef           String        @map("from_ref")
+  toBuilderProfileId String       @map("to_builder_profile_id")
+  amount            Decimal
+  currency          String
+  x402PaymentId     String?       @map("x402_payment_id")
+  status            PaymentStatus @default(PENDING)
+  createdAt         DateTime      @default(now()) @map("created_at")
+
+  toBuilderProfile BuilderProfile @relation(fields: [toBuilderProfileId], references: [id])
+
+  @@map("payments")
+}
+
+/// Append-only audit/eval log for every agent invocation — see Section 6.5/6.6 of the blueprint.
+model AgentRun {
+  id         String   @id @default(uuid())
+  agentName  String   @map("agent_name")
+  userId     String?  @map("user_id")
+  input      Json
+  output     Json
+  latencyMs  Int      @map("latency_ms")
+  model      String
+  costUsd    Decimal  @map("cost_usd")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([agentName, createdAt])
+  @@map("agent_runs")
+}
