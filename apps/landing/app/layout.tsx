@@ -24,7 +24,7 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "BuilderOS — The AI-Native Operating System for Web3 Builders",
   description:
-    "BuilderOS discovers grants, hackathons, and funding opportunities, helps you prepare stronger applications, and turns your shipped work into verifiable on-chain reputation — through a coordinated system of specialized AI agents.",
+    "BuilderOS discovers grants, hackathons, and funding opportunities, helps you prepare stronger applications, and turns your completed work into a portable record of proof — through a coordinated system of specialized AI agents.",
   metadataBase: new URL("https://builderos.dev"),
   openGraph: {
     title: "BuilderOS: The AI-Native Operating System for Web3 Builders",

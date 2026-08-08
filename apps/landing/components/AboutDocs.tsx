@@ -27,7 +27,7 @@ const DOC_SECTIONS = [
       "1. Connect a wallet or email, then link your GitHub this becomes the seed of your builder profile.",
       "2. BuilderScout surfaces a ranked feed of grants, hackathons, and bounties within minutes.",
       "3. Open any opportunity into ProofForge to get an application score, gap analysis, and a generated first draft.",
-      "4. Track deadlines in BuilderFlow, and once you ship, BuilderRep mints the attestation automatically.",
+      "4. Track deadlines in BuilderFlow, and once you ship, BuilderRep records it as structured proof on your builder profile.",
     ],
   },
   {

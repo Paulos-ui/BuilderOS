@@ -230,3 +230,16 @@ model AgentRun {
   @@index([agentName, createdAt])
   @@map("agent_runs")
 }
+
+/// Private-beta signups from the marketing site.
+model WaitlistSignup {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  role      String?
+  ecosystem String?
+  goal      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("waitlist_signups")
+}

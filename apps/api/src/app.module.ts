@@ -5,6 +5,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { ProfilesModule } from './profiles/profiles.module';
+import { WaitlistModule } from './waitlist/waitlist.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -20,6 +21,7 @@ import { HealthController } from './health.controller';
     PrismaModule,
     AuthModule,
     ProfilesModule,
+    WaitlistModule,
   ],
   controllers: [HealthController],
   providers: [
