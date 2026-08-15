@@ -79,10 +79,17 @@ export class AuthController {
   }
 
   private setRefreshCookie(res: Response, tokens: SessionTokens) {
+    // The app (Vercel) and the API (Render) are different sites, so a
+    // 'lax' cookie would simply never be sent on the refresh call and every
+    // session would silently die on reload. 'none' is required for
+    // cross-site delivery, and browsers only accept it alongside Secure —
+    // which is why this pairs with HTTPS in production. Once both run on
+    // one domain (app + api.builderos.dev), move back to 'lax'.
+    const isProd = this.config.get('NODE_ENV') === 'production';
     res.cookie(REFRESH_COOKIE, tokens.refreshToken, {
       httpOnly: true,
-      secure: this.config.get('NODE_ENV') === 'production',
-      sameSite: 'lax',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days, matches JWT_REFRESH_TTL default
       path: '/v1/auth',
     });

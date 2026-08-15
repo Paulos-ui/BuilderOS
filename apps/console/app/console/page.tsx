@@ -1,12 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { CONSOLE_AGENTS } from "@/lib/agents";
+import { useAgents } from "@/lib/use-agents";
+import ChainStatus from "@/components/ChainStatus";
 import { RackModule } from "@/components/RackModule";
 import { Odometer } from "@/components/Odometer";
 import { SettlementTrack, SETTLEMENT_LEGEND } from "@/components/Settlement";
 
 export default function ConsolePage() {
+  // Live from the ERC-8004 registries on GOAT, via the API.
+  const { agents: CONSOLE_AGENTS, state, blockNumber } = useAgents();
+
   const registered = CONSOLE_AGENTS.filter((a) => a.identity.agentId !== null);
   const totalAttestations = CONSOLE_AGENTS.reduce(
     (sum, a) => sum + (a.reputation?.count ?? 0),
@@ -23,6 +27,8 @@ export default function ConsolePage() {
         />
 
         {/* The rack */}
+        <ChainStatus state={state} blockNumber={blockNumber} />
+
         <div className="relative mt-8">
           <ScanSweep />
           <div className="relative space-y-2.5">
