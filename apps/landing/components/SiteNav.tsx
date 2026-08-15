@@ -4,6 +4,9 @@ import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "framer-
 import { useEffect, useRef, useState } from "react";
 import { BuilderOsLogo } from "./BuilderOsLogo";
 
+const CONSOLE_URL =
+  process.env.NEXT_PUBLIC_CONSOLE_URL ?? "http://localhost:3001";
+
 const NAV_LINKS = [
   { href: "#pipeline", label: "System" },
   { href: "#constellation", label: "Agents" },
@@ -88,6 +91,13 @@ export default function SiteNav() {
 
         <div className="flex items-center gap-2">
           <a
+            href={`${CONSOLE_URL}/signin`}
+            className="hidden rounded-sm px-3 py-2 font-mono text-[11px] tracking-[0.12em] text-paper-dim transition-colors hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-bright md:inline-block"
+          >
+            SIGN IN
+          </a>
+
+          <a
             href="#cta"
             onClick={() => handleNavigate("#cta")}
             className="hidden rounded-sm bg-brass px-4 py-2 font-mono text-[11px] tracking-[0.1em] text-ink transition-colors hover:bg-brass-bright focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-bright md:inline-block"
@@ -151,9 +161,15 @@ export default function SiteNav() {
                 ))}
               </ul>
               <a
+                href={`${CONSOLE_URL}/signin`}
+                className="mt-4 block rounded-sm border border-line/40 px-4 py-3 text-center font-mono text-xs tracking-[0.1em] text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-bright"
+              >
+                SIGN IN
+              </a>
+              <a
                 href="#cta"
                 onClick={() => handleNavigate("#cta")}
-                className="mt-4 block rounded-sm bg-brass px-4 py-3 text-center font-mono text-xs tracking-[0.1em] text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-bright"
+                className="mt-3 block rounded-sm bg-brass px-4 py-3 text-center font-mono text-xs tracking-[0.1em] text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-bright"
               >
                 JOIN BETA
               </a>

@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { WaitlistModule } from './waitlist/waitlist.module';
 import { AgentsModule } from './agents/agents.module';
+import { OpportunitiesModule } from './opportunities/opportunities.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -24,6 +25,7 @@ import { HealthController } from './health.controller';
     ProfilesModule,
     WaitlistModule,
     AgentsModule,
+    OpportunitiesModule,
   ],
   controllers: [HealthController],
   providers: [

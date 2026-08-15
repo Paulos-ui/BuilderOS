@@ -1,5 +1,6 @@
 import AuthGate from "@/components/AuthGate";
 import SessionBar from "@/components/SessionBar";
+import ConsoleNav from "@/components/ConsoleNav";
 
 /**
  * Route-level protection for everything under /console.
@@ -18,6 +19,7 @@ export default function ConsoleLayout({
     <AuthGate>
       <div className="mx-auto max-w-5xl px-5 pt-8 md:px-8">
         <SessionBar />
+        <ConsoleNav />
       </div>
       {children}
     </AuthGate>
