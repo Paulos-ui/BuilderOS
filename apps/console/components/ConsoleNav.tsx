@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { BuilderOsLogo } from "./BuilderOsLogo";
+import BuilderIdenticon from "./BuilderIdenticon";
 import { useAuth } from "@/lib/auth-context";
 
 const TABS = [
@@ -44,6 +45,10 @@ export default function ConsoleNav() {
 
         {identity && (
           <div className="flex items-center gap-3 font-mono text-[11px]">
+            <BuilderIdenticon
+              seed={profile?.user?.walletAddress ?? profile?.id}
+              size={26}
+            />
             <span
               aria-hidden="true"
               className="h-1.5 w-1.5 rounded-full bg-signal"
