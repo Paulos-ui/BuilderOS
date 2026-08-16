@@ -44,7 +44,12 @@ export class AuthController {
       dto.signature,
     );
     this.setRefreshCookie(res, tokens);
-    return { accessToken: tokens.accessToken };
+    return {
+      accessToken: tokens.accessToken,
+      // Returned so the console can fall back to sessionStorage when
+      // the browser blocks our third-party refresh cookie.
+      refreshToken: tokens.refreshToken,
+    };
   }
 
   /** Issues a 6-digit sign-in code. */
@@ -62,7 +67,10 @@ export class AuthController {
     const email = await this.otpService.verify(dto.email, dto.code);
     const tokens = await this.authService.startEmailSession(email);
     this.setRefreshCookie(res, tokens);
-    return { accessToken: tokens.accessToken };
+    return {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+    };
   }
 
   @Post('email/magic-link')
@@ -77,7 +85,12 @@ export class AuthController {
   ) {
     const tokens = await this.authService.verifyMagicLink(dto.token);
     this.setRefreshCookie(res, tokens);
-    return { accessToken: tokens.accessToken };
+    return {
+      accessToken: tokens.accessToken,
+      // Returned so the console can fall back to sessionStorage when
+      // the browser blocks our third-party refresh cookie.
+      refreshToken: tokens.refreshToken,
+    };
   }
 
   @Post('refresh')
@@ -85,13 +98,24 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const refreshToken = req.cookies?.[REFRESH_COOKIE];
+    // Cookie first. Firefox and Safari block third-party cookies by
+    // default, and the console is on a different registrable domain to this
+    // API, so the cookie is often simply absent — the body fallback is what
+    // keeps sessions alive there. Once app and API share a parent domain
+    // this can go back to cookie-only.
+    const refreshToken =
+      req.cookies?.[REFRESH_COOKIE] ??
+      (req.body as { refreshToken?: string } | undefined)?.refreshToken;
+
     if (!refreshToken) {
       throw new UnauthorizedException('No refresh token present');
     }
     const tokens = await this.authService.refresh(refreshToken);
     this.setRefreshCookie(res, tokens);
-    return { accessToken: tokens.accessToken };
+    return {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+    };
   }
 
   @Post('logout')

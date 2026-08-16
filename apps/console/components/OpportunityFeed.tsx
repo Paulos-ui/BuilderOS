@@ -113,12 +113,6 @@ export default function OpportunityFeed() {
         ))}
       </div>
 
-      {data?.embeddingProvider === "local" && (
-        <p className="mt-4 rounded-sm border border-brass/30 bg-brass/5 px-3 py-2 font-mono text-[10px] leading-relaxed tracking-wide text-brass-bright">
-          RANKING USES THE LOCAL FALLBACK EMBEDDER — LEXICAL, NOT SEMANTIC.
-          SET VOYAGE_API_KEY FOR REAL RELEVANCE MATCHING.
-        </p>
-      )}
 
       {error && (
         <p
