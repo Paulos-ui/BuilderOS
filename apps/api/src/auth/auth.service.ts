@@ -159,58 +159,6 @@ export class AuthService {
 
   // ---------- Email magic link ----------
 
-  async requestMagicLink(email: string): Promise<{ sent: true }> {
-    const token = randomUUID();
-    await this.prisma.magicLinkToken.create({
-      data: {
-        email: email.toLowerCase(),
-        token,
-        expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 min
-      },
-    });
-
-    const link = `${this.config.get('APP_BASE_URL')}/auth/verify?token=${token}`;
-
-    // In production this calls Resend (or your provider of choice). We log
-    // instead of throwing when RESEND_API_KEY is unset so local dev doesn't
-    // require a real email account to exercise the auth flow.
-    const apiKey = this.config.get<string>('RESEND_API_KEY');
-    if (apiKey) {
-      const { Resend } = await import('resend');
-      const resend = new Resend(apiKey);
-      await resend.emails.send({
-        from: this.config.get('MAGIC_LINK_FROM_EMAIL') ?? 'hello@builderos.dev',
-        to: email,
-        subject: 'Sign in to BuilderOS',
-        html: `<p>Click to sign in: <a href="${link}">${link}</a></p><p>This link expires in 15 minutes.</p>`,
-      });
-    } else {
-      console.log(`[dev] Magic link for ${email}: ${link}`);
-    }
-
-    return { sent: true };
-  }
-
-  async verifyMagicLink(token: string): Promise<SessionTokens> {
-    const record = await this.prisma.magicLinkToken.findUnique({
-      where: { token },
-    });
-
-    if (!record || record.usedAt || record.expiresAt < new Date()) {
-      throw new UnauthorizedException(
-        'Magic link is invalid, used, or expired',
-      );
-    }
-
-    await this.prisma.magicLinkToken.update({
-      where: { token },
-      data: { usedAt: new Date() },
-    });
-
-    const user = await this.findOrCreateUserByEmail(record.email);
-    return this.issueSession(user.id);
-  }
-
   private async findOrCreateUserByEmail(email: string) {
     const existing = await this.prisma.user.findUnique({
       where: { email },

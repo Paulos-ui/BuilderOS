@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth-context";
 const TABS = [
   { href: "/console", label: "AGENT RACK" },
   { href: "/console/opportunities", label: "OPPORTUNITIES" },
+  { href: "/console/apply", label: "APPLY" },
   { href: "/console/profile", label: "PROFILE" },
 ];
 

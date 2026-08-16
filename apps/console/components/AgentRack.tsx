@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { useAgents } from "@/lib/use-agents";
 import ChainStatus from "./ChainStatus";
+import PageHeader from "./PageHeader";
 import { Odometer } from "./Odometer";
 import AgentDetailPanel from "./AgentDetailPanel";
 import { RACK, TIER, PIPELINE, type RackEntry } from "./agent-rack-data";
@@ -20,22 +21,15 @@ export default function AgentRack() {
 
   return (
     <section className="py-10">
+      <PageHeader
+        eyebrow="AGENT SYSTEM"
+        title="Agent rack"
+        description="Six specialised agents, each with a defined responsibility and a place in the workflow. Identity and reputation are read from the ERC-8004 registries on GOAT Network."
+        status={<ChainStatus state={state} blockNumber={blockNumber} />}
+      />
+
       <header>
-        <p className="font-mono text-[10px] tracking-[0.25em] text-line-bright">
-          AGENT SYSTEM
-        </p>
-        <h1 className="mt-3 font-display text-3xl font-semibold text-paper">
-          Agent rack
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-paper-dim">
-          Six specialised agents, each with a defined responsibility and a
-          place in the workflow. Identity and reputation are read from the
-          ERC-8004 registries on GOAT Network.
-        </p>
-
-        <ChainStatus state={state} blockNumber={blockNumber} />
-
-        <dl className="mt-6 grid grid-cols-3 gap-4 border-y border-line/15 py-4">
+        <dl className="mt-6 grid grid-cols-3 gap-4 border-b border-line/15 pb-4">
           <Stat label="OPERATIONAL" value={operational} suffix={`/ ${RACK.length}`} />
           <Stat label="ON-CHAIN" value={registered} suffix={`/ ${RACK.length}`} />
           <Stat label="NETWORK" text="GOAT testnet3" />

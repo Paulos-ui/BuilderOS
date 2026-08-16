@@ -83,8 +83,8 @@ export const RACK: RackEntry[] = [
     stage: "Apply",
     summary:
       "Reviews your application draft before you submit it: scores it against what reviewers reward, flags weak sections, and drafts supporting documents from your own material.",
-    capability: "On-chain identity live; scoring endpoint in build.",
-    tier: "registered",
+    capability: "Live review. Scores your draft against reviewer criteria.",
+    tier: "operational",
     skills: ["application-scoring", "document-generation", "gap-analysis"],
     responsibilities: [
       "Scores a draft section by section against real reviewer criteria",
@@ -92,8 +92,9 @@ export const RACK: RackEntry[] = [
       "Drafts pitch summaries, technical briefs and budget tables",
       "Grounds every claim in evidence you supplied — it will not invent accomplishments",
     ],
-    unavailableReason:
-      "ProofForge is registered on-chain as agent #342, but its scoring endpoint is still being built. It is next in the queue.",
+    launchPath: "/console/apply",
+    launchLabel: "Review an application",
+    launchHint: "LIVE · AGENT #342 ON GOAT TESTNET3",
   },
   {
     key: "flow",

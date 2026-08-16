@@ -8,6 +8,7 @@ import { ProfilesModule } from './profiles/profiles.module';
 import { WaitlistModule } from './waitlist/waitlist.module';
 import { AgentsModule } from './agents/agents.module';
 import { OpportunitiesModule } from './opportunities/opportunities.module';
+import { ProofForgeModule } from './proofforge/proofforge.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -26,6 +27,7 @@ import { HealthController } from './health.controller';
     WaitlistModule,
     AgentsModule,
     OpportunitiesModule,
+    ProofForgeModule,
   ],
   controllers: [HealthController],
   providers: [

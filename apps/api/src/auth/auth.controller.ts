@@ -12,8 +12,6 @@ import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { WalletChallengeDto } from './dto/wallet-challenge.dto';
 import { WalletVerifyDto } from './dto/wallet-verify.dto';
-import { RequestMagicLinkDto } from './dto/request-magic-link.dto';
-import { VerifyMagicLinkDto } from './dto/verify-magic-link.dto';
 import { RequestOtpDto } from './dto/request-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { OtpService } from './otp.service';
@@ -69,26 +67,6 @@ export class AuthController {
     this.setRefreshCookie(res, tokens);
     return {
       accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-    };
-  }
-
-  @Post('email/magic-link')
-  requestMagicLink(@Body() dto: RequestMagicLinkDto) {
-    return this.authService.requestMagicLink(dto.email);
-  }
-
-  @Post('email/verify-link')
-  async verifyMagicLink(
-    @Body() dto: VerifyMagicLinkDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const tokens = await this.authService.verifyMagicLink(dto.token);
-    this.setRefreshCookie(res, tokens);
-    return {
-      accessToken: tokens.accessToken,
-      // Returned so the console can fall back to sessionStorage when
-      // the browser blocks our third-party refresh cookie.
       refreshToken: tokens.refreshToken,
     };
   }
