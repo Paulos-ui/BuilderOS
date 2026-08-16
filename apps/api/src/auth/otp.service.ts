@@ -8,6 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { createHash, randomInt, timingSafeEqual } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailerService, type MailStatus } from '../common/mailer.service';
 
 const OTP_TTL_MINUTES = 10;
 const MAX_ATTEMPTS = 5;
@@ -36,6 +37,7 @@ export class OtpService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly mailer: MailerService,
   ) {}
 
   private hash(code: string, email: string): string {
@@ -44,7 +46,9 @@ export class OtpService {
     return createHash('sha256').update(`${email}:${code}`).digest('hex');
   }
 
-  async issue(rawEmail: string): Promise<{ sent: true; retryAfter: number }> {
+  async issue(
+    rawEmail: string,
+  ): Promise<{ sent: boolean; delivery: MailStatus; retryAfter: number; reason?: string }> {
     const email = rawEmail.trim().toLowerCase();
 
     const recent = await this.prisma.emailOtp.findFirst({
@@ -79,31 +83,21 @@ export class OtpService {
       },
     });
 
-    await this.deliver(email, code);
-    return { sent: true, retryAfter: RESEND_COOLDOWN_SECONDS };
-  }
+    const result = await this.mailer.sendSignInCode(
+      email,
+      code,
+      OTP_TTL_MINUTES,
+    );
 
-  private async deliver(email: string, code: string) {
-    const apiKey = this.config.get<string>('RESEND_API_KEY');
-
-    if (!apiKey) {
-      // Demo path: no email provider configured, so the code goes to the
-      // server log. Loud formatting because it has to be findable in a
-      // Render log stream while someone is watching.
-      this.logger.warn(
-        `\n${'='.repeat(46)}\n  SIGN-IN CODE for ${email}\n  >>>  ${code}  <<<\n  expires in ${OTP_TTL_MINUTES} minutes\n${'='.repeat(46)}`,
-      );
-      return;
-    }
-
-    const { Resend } = await import('resend');
-    const resend = new Resend(apiKey);
-    await resend.emails.send({
-      from: this.config.get('MAGIC_LINK_FROM_EMAIL') ?? 'hello@builderos.dev',
-      to: email,
-      subject: `${code} is your BuilderOS sign-in code`,
-      html: `<p>Your BuilderOS sign-in code:</p><p style="font-size:28px;letter-spacing:6px;font-family:monospace"><strong>${code}</strong></p><p>It expires in ${OTP_TTL_MINUTES} minutes. If you didn't request it, ignore this email.</p>`,
-    });
+    // The code is valid regardless of whether the email landed — it is in
+    // the database and (on failure) in the logs. We report the delivery
+    // outcome rather than claiming success we cannot verify.
+    return {
+      sent: result.status !== 'failed',
+      delivery: result.status,
+      retryAfter: RESEND_COOLDOWN_SECONDS,
+      ...(result.reason ? { reason: result.reason } : {}),
+    };
   }
 
   /** Returns the verified email, or throws. */

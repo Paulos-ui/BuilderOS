@@ -24,5 +24,10 @@ async function bootstrap() {
   const port = process.env.PORT ?? 4000;
   await app.listen(port);
   console.log(`BuilderOS Core Platform API listening on :${port}`);
+  console.log(
+    process.env.RESEND_API_KEY
+      ? `Email delivery: ENABLED (from ${process.env.MAIL_FROM ?? 'onboarding@resend.dev'})`
+      : 'Email delivery: DISABLED — sign-in codes will print to this log',
+  );
 }
 void bootstrap();

@@ -126,7 +126,12 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
 // ── Auth ─────────────────────────────────────────────────────────────────
 
 export function requestOtp(email: string) {
-  return api<{ sent: true; retryAfter: number }>("/v1/auth/email/otp", {
+  return api<{
+    sent: boolean;
+    delivery: "sent" | "logged" | "failed";
+    retryAfter: number;
+    reason?: string;
+  }>("/v1/auth/email/otp", {
     method: "POST",
     body: JSON.stringify({ email }),
   });

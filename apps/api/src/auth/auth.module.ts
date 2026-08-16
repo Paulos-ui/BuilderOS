@@ -6,6 +6,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { OtpService } from './otp.service';
+import { MailerService } from '../common/mailer.service';
 
 @Module({
   imports: [
@@ -20,7 +21,7 @@ import { OtpService } from './otp.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, OtpService],
+  providers: [AuthService, JwtStrategy, OtpService, MailerService],
   exports: [AuthService],
 })
 export class AuthModule {}

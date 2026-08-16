@@ -43,6 +43,9 @@ export default function SignInPanel() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
+  const [delivery, setDelivery] = useState<"sent" | "logged" | "failed" | null>(
+    null,
+  );
 
   // Resend cooldown ticker.
   useEffect(() => {
@@ -64,6 +67,11 @@ export default function SignInPanel() {
       setStep("enter-code");
       setCode("");
       setCooldown(res.retryAfter ?? 30);
+      setDelivery(res.delivery);
+      // A failed send still produced a valid code, so we advance to the
+      // input screen — but we say plainly that the email didn't arrive
+      // rather than leaving the user waiting on an inbox forever.
+      if (res.delivery === "failed" && res.reason) setError(res.reason);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't send a code.");
     } finally {
@@ -160,10 +168,17 @@ export default function SignInPanel() {
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-paper-dim">
           {step === "enter-code" ? (
-            <>
-              We sent a 6-digit code to{" "}
-              <span className="text-paper">{email}</span>.
-            </>
+            delivery === "logged" ? (
+              <>
+                Email isn&apos;t configured on this deployment, so the code
+                was written to the server log instead.
+              </>
+            ) : (
+              <>
+                We sent a 6-digit code to{" "}
+                <span className="text-paper">{email}</span>.
+              </>
+            )
           ) : (
             "Private beta. Use the address you joined with."
           )}
