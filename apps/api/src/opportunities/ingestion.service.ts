@@ -11,10 +11,14 @@ import type {
 
 export interface SourceResult {
   source: string;
-  status: 'ok' | 'failed';
+  status: 'ok' | 'partial' | 'failed';
   fetched: number;
   created: number;
   updated: number;
+  /** How many rows got a vector — the rest fall back to deadline ordering. */
+  embedded?: number;
+  /** Individual listings skipped without aborting the source. */
+  skipped?: number;
   error?: string;
 }
 
@@ -56,13 +60,16 @@ export class IngestionService {
     for (const source of this.sources) {
       try {
         const items = await source.fetch();
-        const { created, updated } = await this.persist(items);
+        const { created, updated, embedded, itemErrors } =
+          await this.persist(items);
         results.push({
           source: source.name,
-          status: 'ok',
+          status: itemErrors > 0 ? 'partial' : 'ok',
           fetched: items.length,
           created,
           updated,
+          embedded,
+          skipped: itemErrors,
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -96,60 +103,90 @@ export class IngestionService {
   private async persist(items: NormalizedOpportunity[]) {
     let created = 0;
     let updated = 0;
+    let embedded = 0;
+    let itemErrors = 0;
 
     for (const item of items) {
-      // sourceUrl is the natural key: the same listing re-fetched tomorrow
-      // must update in place rather than duplicate down the feed.
-      const existing = await this.prisma.opportunity.findFirst({
-        where: { sourceUrl: item.sourceUrl, title: item.title },
-        select: { id: true },
-      });
+      try {
+        // sourceUrl is the natural key: the same listing re-fetched tomorrow
+        // must update in place rather than duplicate down the feed.
+        const existing = await this.prisma.opportunity.findFirst({
+          where: { sourceUrl: item.sourceUrl, title: item.title },
+          select: { id: true },
+        });
 
-      const data = {
-        sourceName: item.sourceName,
-        sourceUrl: item.sourceUrl,
-        title: item.title,
-        description: item.description,
-        category: item.category,
-        chains: item.chains,
-        fundingMin: item.fundingMin,
-        fundingMax: item.fundingMax,
-        deadline: item.deadline,
-        eligibility: item.eligibility as object,
-        lastVerifiedAt: new Date(),
-        status: 'OPEN' as const,
-      };
+        const data = {
+          sourceName: item.sourceName,
+          sourceUrl: item.sourceUrl,
+          title: item.title,
+          description: item.description,
+          category: item.category,
+          chains: item.chains,
+          fundingMin: item.fundingMin,
+          fundingMax: item.fundingMax,
+          deadline: item.deadline,
+          eligibility: item.eligibility as object,
+          lastVerifiedAt: new Date(),
+          status: 'OPEN' as const,
+        };
 
-      const record = existing
-        ? await this.prisma.opportunity.update({
-            where: { id: existing.id },
-            data,
-          })
-        : await this.prisma.opportunity.create({ data });
+        const record = existing
+          ? await this.prisma.opportunity.update({
+              where: { id: existing.id },
+              data,
+            })
+          : await this.prisma.opportunity.create({ data });
 
-      existing ? updated++ : created++;
+        existing ? updated++ : created++;
 
-      await this.writeEmbedding(
-        record.id,
-        `${item.title}\n\n${item.description}\n\nChains: ${item.chains.join(', ')}`,
-      );
+        const ok = await this.writeEmbedding(
+          record.id,
+          `${item.title}\n\n${item.description}\n\nChains: ${item.chains.join(', ')}`,
+        );
+        if (ok) embedded++;
+      } catch (err) {
+        // One malformed listing must not discard the rest of the batch.
+        itemErrors++;
+        this.logger.warn(
+          `Skipped "${item.title}": ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        );
+      }
     }
 
-    return { created, updated };
+    return { created, updated, embedded, itemErrors };
   }
 
   /**
    * Embeddings go in via raw SQL — Prisma has no typed representation for
    * pgvector columns, so this is the supported path rather than a hack.
    */
-  private async writeEmbedding(id: string, text: string) {
-    const vector = await this.embeddings.embed(text);
-    const literal = EmbeddingsService.toSqlVector(vector);
-    await this.prisma.$executeRawUnsafe(
-      `UPDATE opportunities SET embedding = $1::vector WHERE id = $2::uuid`,
-      literal,
-      id,
-    );
+  private async writeEmbedding(id: string, text: string): Promise<boolean> {
+    try {
+      const vector = await this.embeddings.embed(text);
+      const literal = EmbeddingsService.toSqlVector(vector);
+      // NOTE: `id` is TEXT, not Postgres's native uuid type — Prisma's
+      // `String @id @default(uuid())` generates the value in the client and
+      // stores it as text. Casting to ::uuid here produced
+      // `operator does not exist: text = uuid` against a real database.
+      await this.prisma.$executeRawUnsafe(
+        `UPDATE opportunities SET embedding = $1::vector WHERE id = $2`,
+        literal,
+        id,
+      );
+      return true;
+    } catch (err) {
+      // An opportunity without an embedding still belongs in the feed — it
+      // just falls back to deadline ordering. Losing the row entirely would
+      // be a far worse outcome than losing its vector.
+      this.logger.warn(
+        `Embedding write failed for ${id}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+      return false;
+    }
   }
 
   /** Anything past its deadline stops being an opportunity. */

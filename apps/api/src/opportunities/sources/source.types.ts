@@ -63,6 +63,20 @@ export async function fetchJson<T>(
       throw new Error(`${url} responded ${res.status}`);
     }
     return (await res.json()) as T;
+  } catch (err) {
+    // Node's bare "fetch failed" hides whether this was DNS, a timeout, TLS,
+    // or a refused connection — all of which need different fixes.
+    const cause =
+      (err as { cause?: { code?: string; message?: string } })?.cause;
+    const detail = cause?.code ?? cause?.message;
+    if ((err as Error)?.name === 'AbortError') {
+      throw new Error(`${url} timed out after ${timeoutMs}ms`);
+    }
+    throw new Error(
+      `${url} unreachable${detail ? ` (${detail})` : ''}: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
   } finally {
     clearTimeout(timer);
   }
