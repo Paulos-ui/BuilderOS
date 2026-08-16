@@ -10,7 +10,7 @@ export default function SignInPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (status === "authenticated") router.replace("/console/opportunities");
+    if (status === "authenticated") router.replace("/console");
   }, [status, router]);
 
   return (

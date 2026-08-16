@@ -18,7 +18,7 @@ const LANDING_URL =
   process.env.NEXT_PUBLIC_LANDING_URL ?? "https://builderos1.vercel.app";
 
 /** Where a signed-in builder lands: the feed, not an empty dashboard. */
-const POST_SIGNIN = "/console/opportunities";
+const POST_SIGNIN = "/console";
 
 type Tab = "email" | "wallet";
 type Step = "enter-email" | "enter-code";

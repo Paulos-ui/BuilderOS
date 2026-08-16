@@ -58,6 +58,45 @@ export class AuthService {
    * the message, verify the nonce is unused and unexpired, then mint (or
    * fetch) the user and issue a session.
    */
+  /**
+   * Verifies a SIWE signature and returns the address. Shared by sign-in and
+   * by wallet linking so both paths enforce identical proof of control.
+   */
+  async verifyWalletSignature(
+    message: string,
+    signature: string,
+  ): Promise<string> {
+    const parsed = parseSiweMessage(message);
+
+    const nonceRecord = await this.prisma.authNonce.findUnique({
+      where: { nonce: parsed.nonce },
+    });
+    if (
+      !nonceRecord ||
+      nonceRecord.usedAt ||
+      nonceRecord.expiresAt < new Date()
+    ) {
+      throw new UnauthorizedException('Nonce is invalid, used, or expired');
+    }
+    if (nonceRecord.address !== parsed.address.toLowerCase()) {
+      throw new UnauthorizedException('Address does not match challenge');
+    }
+
+    const isValid = await verifyMessage({
+      address: parsed.address as `0x${string}`,
+      message,
+      signature: signature as `0x${string}`,
+    });
+    if (!isValid) throw new UnauthorizedException('Invalid signature');
+
+    await this.prisma.authNonce.update({
+      where: { nonce: parsed.nonce },
+      data: { usedAt: new Date() },
+    });
+
+    return parsed.address;
+  }
+
   async walletVerify(
     message: string,
     signature: string,

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { OpportunitiesController } from './opportunities.controller';
+import { DiagnosticsController } from './diagnostics.controller';
 import { FeedService } from './feed.service';
 import { IngestionService } from './ingestion.service';
 import { EmbeddingsService } from '../embeddings/embeddings.service';
@@ -8,7 +9,7 @@ import { DevpostSource } from './sources/devpost.source';
 import { GoatSource } from './sources/goat.source';
 
 @Module({
-  controllers: [OpportunitiesController],
+  controllers: [OpportunitiesController, DiagnosticsController],
   providers: [
     FeedService,
     IngestionService,
