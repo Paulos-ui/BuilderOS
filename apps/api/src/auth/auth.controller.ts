@@ -14,6 +14,9 @@ import { WalletChallengeDto } from './dto/wallet-challenge.dto';
 import { WalletVerifyDto } from './dto/wallet-verify.dto';
 import { RequestMagicLinkDto } from './dto/request-magic-link.dto';
 import { VerifyMagicLinkDto } from './dto/verify-magic-link.dto';
+import { RequestOtpDto } from './dto/request-otp.dto';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { OtpService } from './otp.service';
 import type { SessionTokens } from './auth.types';
 
 const REFRESH_COOKIE = 'builderos_refresh';
@@ -22,6 +25,7 @@ const REFRESH_COOKIE = 'builderos_refresh';
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
+    private readonly otpService: OtpService,
     private readonly config: ConfigService,
   ) {}
 
@@ -43,12 +47,30 @@ export class AuthController {
     return { accessToken: tokens.accessToken };
   }
 
+  /** Issues a 6-digit sign-in code. */
+  @Post('email/otp')
+  requestOtp(@Body() dto: RequestOtpDto) {
+    return this.otpService.issue(dto.email);
+  }
+
+  /** Verifies a 6-digit code and starts a session. */
+  @Post('email/verify')
+  async verifyOtp(
+    @Body() dto: VerifyOtpDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const email = await this.otpService.verify(dto.email, dto.code);
+    const tokens = await this.authService.startEmailSession(email);
+    this.setRefreshCookie(res, tokens);
+    return { accessToken: tokens.accessToken };
+  }
+
   @Post('email/magic-link')
   requestMagicLink(@Body() dto: RequestMagicLinkDto) {
     return this.authService.requestMagicLink(dto.email);
   }
 
-  @Post('email/verify')
+  @Post('email/verify-link')
   async verifyMagicLink(
     @Body() dto: VerifyMagicLinkDto,
     @Res({ passthrough: true }) res: Response,

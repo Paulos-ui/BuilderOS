@@ -71,7 +71,7 @@ export default function OpportunityFeed() {
   }, [filter]);
 
   return (
-    <section className="mx-auto max-w-5xl px-5 py-10 md:px-8">
+    <section className="py-10">
       <header>
         <p className="font-mono text-[10px] tracking-[0.25em] text-line-bright">
           AG-01 · BUILDERSCOUT

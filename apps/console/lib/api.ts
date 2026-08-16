@@ -13,7 +13,9 @@
  *     genuinely over, and we surface it rather than looping.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
+const API_URL = (
+  process.env.NEXT_PUBLIC_API_URL ?? "https://builderos-api.onrender.com"
+).replace(/\/+$/, "");
 
 let accessToken: string | null = null;
 let refreshPromise: Promise<boolean> | null = null;
@@ -122,6 +124,22 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 // ── Auth ─────────────────────────────────────────────────────────────────
+
+export function requestOtp(email: string) {
+  return api<{ sent: true; retryAfter: number }>("/v1/auth/email/otp", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function verifyOtp(email: string, code: string) {
+  const data = await api<{ accessToken: string }>("/v1/auth/email/verify", {
+    method: "POST",
+    body: JSON.stringify({ email, code }),
+  });
+  accessToken = data.accessToken;
+  return data;
+}
 
 export function requestMagicLink(email: string) {
   return api<{ sent: true }>("/v1/auth/email/magic-link", {

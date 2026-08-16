@@ -191,6 +191,12 @@ export class AuthService {
 
   // ---------- Session issuance ----------
 
+  /** Starts a session for a verified email address (used by the OTP flow). */
+  async startEmailSession(email: string): Promise<SessionTokens> {
+    const user = await this.findOrCreateUserByEmail(email.toLowerCase());
+    return this.issueSession(user.id);
+  }
+
   private async issueSession(userId: string): Promise<SessionTokens> {
     const profile = await this.prisma.builderProfile.findUnique({
       where: { userId },

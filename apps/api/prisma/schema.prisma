@@ -243,3 +243,17 @@ model WaitlistSignup {
 
   @@map("waitlist_signups")
 }
+
+/// Six-digit email sign-in codes. Stores a salted hash, never the code.
+model EmailOtp {
+  id        String    @id @default(uuid())
+  email     String
+  codeHash  String    @map("code_hash")
+  attempts  Int       @default(0)
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([email, createdAt])
+  @@map("email_otps")
+}
