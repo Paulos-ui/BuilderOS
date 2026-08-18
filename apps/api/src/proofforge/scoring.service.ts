@@ -1,29 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-/**
- * ProofForge scoring.
- *
- * ── The grounding rule ────────────────────────────────────────────────────
- * Everything this service returns is an assessment OF text the builder wrote.
- * It never adds facts, never invents accomplishments, and never rewrites a
- * claim into something stronger than what was supplied. A fabricated line in
- * a grant application is a real harm to the user — it can lose them funding
- * or their standing with a programme — so grounding is enforced structurally
- * here rather than requested politely in a prompt.
- *
- * ── Two engines ───────────────────────────────────────────────────────────
- * rubric — deterministic structural analysis. Runs with no API key, no
- *          network, no cost. It cannot judge whether an argument is
- *          persuasive, but it reliably catches the things that actually sink
- *          applications: vague problem statements, absent milestones,
- *          unjustified budgets, no evidence of prior work.
- *
- * llm    — adds qualitative review when ANTHROPIC_API_KEY is set. Layered on
- *          top of the rubric, never replacing it, so the deterministic floor
- *          is always present.
- */
-
 export type Engine = 'rubric' | 'llm';
 
 export interface DraftSections {
@@ -41,7 +18,6 @@ export interface DimensionScore {
   score: number;
   weight: number;
   findings: string[];
-  /** Concrete, actionable. Never "make it better". */
   suggestions: string[];
 }
 
@@ -62,9 +38,7 @@ interface Rubric {
   weight: number;
   section: keyof DraftSections;
   minWords: number;
-  /** Signals that the section is doing its job. */
   signals: { pattern: RegExp; label: string; weight: number }[];
-  /** Phrases that indicate vagueness rather than substance. */
   vagueness: RegExp[];
   guidance: string[];
 }
@@ -81,16 +55,8 @@ const RUBRICS: Rubric[] = [
     minWords: 40,
     signals: [
       { pattern: NUMBER, label: 'Quantifies the problem', weight: 25 },
-      {
-        pattern: /\b(currently|today|right now|at present)\b/i,
-        label: 'Anchors the problem in the present',
-        weight: 10,
-      },
-      {
-        pattern: /\b(because|due to|caused by|results? from)\b/i,
-        label: 'Explains causation, not just symptoms',
-        weight: 15,
-      },
+      { pattern: /\b(currently|today|right now|at present)\b/i, label: 'Anchors the problem in the present', weight: 10 },
+      { pattern: /\b(because|due to|caused by|results? from)\b/i, label: 'Explains causation, not just symptoms', weight: 15 },
     ],
     vagueness: [
       /\b(revolutionar|disrupt|game.?chang|paradigm|synerg)/i,
@@ -108,16 +74,8 @@ const RUBRICS: Rubric[] = [
     section: 'solution',
     minWords: 50,
     signals: [
-      {
-        pattern: /\b(we (will|have) (built|build|ship|implement)|the system|our approach)\b/i,
-        label: 'States concretely what gets built',
-        weight: 20,
-      },
-      {
-        pattern: /\b(unlike|instead of|rather than|compared (to|with))\b/i,
-        label: 'Differentiates from existing options',
-        weight: 20,
-      },
+      { pattern: /\b(we (will|have) (built|build|ship|implement)|the system|our approach)\b/i, label: 'States concretely what gets built', weight: 20 },
+      { pattern: /\b(unlike|instead of|rather than|compared (to|with))\b/i, label: 'Differentiates from existing options', weight: 20 },
       { pattern: NUMBER, label: 'Includes concrete figures', weight: 10 },
     ],
     vagueness: [
@@ -137,16 +95,8 @@ const RUBRICS: Rubric[] = [
     minWords: 40,
     signals: [
       { pattern: URL, label: 'Links to real code or prior work', weight: 30 },
-      {
-        pattern: /\b(architecture|schema|endpoint|contract|protocol|api|database|index)\b/i,
-        label: 'Names specific technical components',
-        weight: 20,
-      },
-      {
-        pattern: /\b(risk|trade.?off|limitation|constraint|failure mode)\b/i,
-        label: 'Acknowledges trade-offs',
-        weight: 15,
-      },
+      { pattern: /\b(architecture|schema|endpoint|contract|protocol|api|database|index)\b/i, label: 'Names specific technical components', weight: 20 },
+      { pattern: /\b(risk|trade.?off|limitation|constraint|failure mode)\b/i, label: 'Acknowledges trade-offs', weight: 15 },
     ],
     vagueness: [/\b(scalable|robust|enterprise.?grade|military.?grade)\b/i],
     guidance: [
@@ -161,21 +111,9 @@ const RUBRICS: Rubric[] = [
     section: 'milestones',
     minWords: 40,
     signals: [
-      {
-        pattern: /\b(week|month|q[1-4]|phase|milestone|sprint)\s*\d|\b\d+\s*(weeks?|months?)\b/i,
-        label: 'Has a real timeline',
-        weight: 30,
-      },
-      {
-        pattern: /\b(deliver|ship|launch|complete|release)\b/i,
-        label: 'States concrete deliverables',
-        weight: 20,
-      },
-      {
-        pattern: /\b(measur|metric|target|kpi|success criteria)\b/i,
-        label: 'Defines what success looks like',
-        weight: 20,
-      },
+      { pattern: /\b(week|month|q[1-4]|phase|milestone|sprint)\s*\d|\b\d+\s*(weeks?|months?)\b/i, label: 'Has a real timeline', weight: 30 },
+      { pattern: /\b(deliver|ship|launch|complete|release)\b/i, label: 'States concrete deliverables', weight: 20 },
+      { pattern: /\b(measur|metric|target|kpi|success criteria)\b/i, label: 'Defines what success looks like', weight: 20 },
     ],
     vagueness: [/\b(ongoing|continuous|as needed|tbd|to be determined)\b/i],
     guidance: [
@@ -191,11 +129,7 @@ const RUBRICS: Rubric[] = [
     minWords: 25,
     signals: [
       { pattern: /[$€£]|\busd\b|\beth\b|\bbtc\b/i, label: 'States amounts', weight: 30 },
-      {
-        pattern: /\b(breakdown|allocat|split|per|hours?|rate)\b/i,
-        label: 'Breaks the total down',
-        weight: 25,
-      },
+      { pattern: /\b(breakdown|allocat|split|per|hours?|rate)\b/i, label: 'Breaks the total down', weight: 25 },
     ],
     vagueness: [/\b(approximately|roughly|around)\s*\$?\d/i],
     guidance: [
@@ -211,11 +145,7 @@ const RUBRICS: Rubric[] = [
     minWords: 20,
     signals: [
       { pattern: URL, label: 'Links to profiles or prior work', weight: 30 },
-      {
-        pattern: /\b(shipped|built|launched|maintained|contributed)\b/i,
-        label: 'Cites concrete prior work',
-        weight: 25,
-      },
+      { pattern: /\b(shipped|built|launched|maintained|contributed)\b/i, label: 'Cites concrete prior work', weight: 25 },
     ],
     vagueness: [/\b(passionate|experienced team|industry veteran|expert)\b/i],
     guidance: [
@@ -279,12 +209,8 @@ export class ScoringService {
       let score = 25 * lengthRatio;
 
       if (lengthRatio < 1) {
-        findings.push(
-          `Only ${words} words — reviewers expect roughly ${rubric.minWords}+ here.`,
-        );
-        suggestions.push(
-          `Expand this section to at least ${rubric.minWords} words.`,
-        );
+        findings.push(`Only ${words} words — reviewers expect roughly ${rubric.minWords}+ here.`);
+        suggestions.push(`Expand this section to at least ${rubric.minWords} words.`);
       }
 
       for (const signal of rubric.signals) {
@@ -302,9 +228,7 @@ export class ScoringService {
         if (match) {
           vagueHits++;
           findings.push(`Vague phrasing: "${match[0]}"`);
-          suggestions.push(
-            `Replace "${match[0]}" with something a reviewer could check.`,
-          );
+          suggestions.push(`Replace "${match[0]}" with something a reviewer could check.`);
         }
       }
       score -= vagueHits * 8;
@@ -351,10 +275,6 @@ export class ScoringService {
     };
   }
 
-  /**
-   * Adds qualitative review. Uses ANTHROPIC_BASE_URL if configured,
-   * otherwise defaults to the official Anthropic endpoint.
-   */
   private async enrichWithLlm(
     base: ScoreResult,
     draft: DraftSections,
@@ -370,36 +290,35 @@ export class ScoringService {
     const apiKey = this.config.get<string>('ANTHROPIC_API_KEY')!;
     let baseUrl = (
       this.config.get<string>('ANTHROPIC_BASE_URL') ||
-      'https://api.anthropic.com'
+      'https://agentrouter.org'
     ).trim().replace(/\/+$/, '');
 
     const endpoint = baseUrl.endsWith('/v1')
-      ? `${baseUrl}/messages`
-      : `${baseUrl}/v1/messages`;
+      ? `${baseUrl}/chat/completions`
+      : `${baseUrl}/v1/chat/completions`;
 
     const modelName =
-      this.config.get<string>('ANTHROPIC_MODEL') || 'claude-3-5-sonnet-20241022';
+      this.config.get<string>('ANTHROPIC_MODEL') || 'claude-3-5-sonnet';
 
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': apiKey,
         'Authorization': `Bearer ${apiKey}`,
-        'anthropic-version': '2023-06-01',
-        'User-Agent': 'claude-code/0.2.29',
-        'X-Title': 'Claude Code',
       },
       body: JSON.stringify({
         model: modelName,
         max_tokens: 1200,
-        system:
-          'You review draft funding applications. You assess ONLY the text provided. ' +
-          'Never introduce facts, achievements, metrics or claims the author did not write — ' +
-          'a fabricated claim in a grant application can cost the applicant funding and standing. ' +
-          'Be specific and direct; name what is weak and why a reviewer would mark it down. ' +
-          'Respond ONLY with JSON, no preamble or markdown fences.',
         messages: [
+          {
+            role: 'system',
+            content:
+              'You review draft funding applications. You assess ONLY the text provided. ' +
+              'Never introduce facts, achievements, metrics or claims the author did not write — ' +
+              'a fabricated claim in a grant application can cost the applicant funding and standing. ' +
+              'Be specific and direct; name what is weak and why a reviewer would mark it down. ' +
+              'Respond ONLY with valid JSON, no preamble or markdown fences.',
+          },
           {
             role: 'user',
             content:
@@ -417,13 +336,13 @@ export class ScoringService {
 
     if (!res.ok) {
       const errText = await res.text().catch(() => '');
-      throw new Error(`Anthropic responded ${res.status}: ${errText}`);
+      throw new Error(`AgentRouter responded ${res.status}: ${errText}`);
     }
 
     const body = (await res.json()) as {
-      content?: { type: string; text?: string }[];
+      choices?: { message?: { content?: string } }[];
     };
-    const text = body.content?.find((c) => c.type === 'text')?.text ?? '';
+    const text = body.choices?.[0]?.message?.content ?? '';
     const parsed = JSON.parse(text.replace(/```json|```/g, '').trim()) as {
       criticalGaps?: string[];
       strengths?: string[];
