@@ -275,8 +275,6 @@ export class ScoringService {
         };
       }
 
-      // Length floor: below the minimum, a section cannot carry its argument
-      // however well written. Scales rather than cliff-edges.
       const lengthRatio = Math.min(1, words / rubric.minWords);
       let score = 25 * lengthRatio;
 
@@ -298,8 +296,6 @@ export class ScoringService {
         }
       }
 
-      // Vagueness is a penalty rather than a hard fail — marketing language
-      // is a smell, not a disqualification.
       let vagueHits = 0;
       for (const pattern of rubric.vagueness) {
         const match = text.match(pattern);
@@ -356,9 +352,8 @@ export class ScoringService {
   }
 
   /**
-   * Adds qualitative review. The prompt is explicit that the model assesses
-   * only the supplied text and must not introduce facts — the same grounding
-   * rule the rubric enforces structurally.
+   * Adds qualitative review. Uses ANTHROPIC_BASE_URL if configured,
+   * otherwise defaults to the official Anthropic endpoint.
    */
   private async enrichWithLlm(
     base: ScoreResult,
@@ -372,15 +367,31 @@ export class ScoringService {
 
     if (!sections) return base;
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const apiKey = this.config.get<string>('ANTHROPIC_API_KEY')!;
+    let baseUrl = (
+      this.config.get<string>('ANTHROPIC_BASE_URL') ||
+      'https://api.anthropic.com'
+    ).trim().replace(/\/+$/, '');
+
+    const endpoint = baseUrl.endsWith('/v1')
+      ? `${baseUrl}/messages`
+      : `${baseUrl}/v1/messages`;
+
+    const modelName =
+      this.config.get<string>('ANTHROPIC_MODEL') || 'claude-3-5-sonnet-20241022';
+
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': this.config.get<string>('ANTHROPIC_API_KEY')!,
+        'x-api-key': apiKey,
+        'Authorization': `Bearer ${apiKey}`,
         'anthropic-version': '2023-06-01',
+        'User-Agent': 'claude-code/0.2.29',
+        'X-Title': 'Claude Code',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: modelName,
         max_tokens: 1200,
         system:
           'You review draft funding applications. You assess ONLY the text provided. ' +
@@ -404,7 +415,10 @@ export class ScoringService {
       }),
     });
 
-    if (!res.ok) throw new Error(`Anthropic responded ${res.status}`);
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      throw new Error(`Anthropic responded ${res.status}: ${errText}`);
+    }
 
     const body = (await res.json()) as {
       content?: { type: string; text?: string }[];
@@ -419,8 +433,6 @@ export class ScoringService {
     return {
       ...base,
       engine: 'llm',
-      // Structural gaps are kept alongside qualitative ones — the LLM
-      // supplements the deterministic floor, it does not replace it.
       criticalGaps: [...base.criticalGaps, ...(parsed.criticalGaps ?? [])],
       strengths: [...new Set([...base.strengths, ...(parsed.strengths ?? [])])],
       disclaimer: parsed.reviewerPerspective
