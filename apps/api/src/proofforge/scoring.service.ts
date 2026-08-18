@@ -287,20 +287,25 @@ export class ScoringService {
 
     if (!sections) return base;
 
-    const apiKey = this.config.get<string>('ANTHROPIC_API_KEY')!;
-    let baseUrl = (
+    const apiKey = this.config.get<string>('ANTHROPIC_API_KEY');
+
+    if (!apiKey) {
+      throw new Error('ANTHROPIC_API_KEY is not configured');
+    }
+
+    const baseUrl = (
       this.config.get<string>('ANTHROPIC_BASE_URL') ||
-      'https://agentrouter.org'
+      'https://co.agentrouter.org'
     ).trim().replace(/\/+$/, '');
 
-    // Reverted back to /messages for Anthropic format
-    const endpoint = baseUrl.endsWith('/v1')
-      ? `${baseUrl}/messages`
-      : `${baseUrl}/v1/messages`;
+    const endpoint = `${baseUrl}/v1/messages`;
 
-    // AgentRouter uses claude-3-5-sonnet
     const modelName =
-      this.config.get<string>('ANTHROPIC_MODEL') || 'claude-3-5-sonnet';
+      this.config.get<string>('ANTHROPIC_MODEL') ||
+      'claude-3-5-sonnet';
+
+    this.logger.log(`Calling AgentRouter: ${endpoint}`);
+    this.logger.log(`Using model: ${modelName}`);
 
     const res = await fetch(endpoint, {
       method: 'POST',
@@ -308,55 +313,86 @@ export class ScoringService {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
-        // These two headers spoof the Claude Code terminal tool!
-        'User-Agent': 'claude-code/0.2.29',
-        'X-Title': 'Claude Code',
       },
       body: JSON.stringify({
         model: modelName,
         max_tokens: 1200,
         system:
           'You review draft funding applications. You assess ONLY the text provided. ' +
-          'Never introduce facts, achievements, metrics or claims the author did not write — ' +
-          'a fabricated claim in a grant application can cost the applicant funding and standing. ' +
+          'Never introduce facts, achievements, metrics or claims the author did not write. ' +
           'Be specific and direct; name what is weak and why a reviewer would mark it down. ' +
-          'Respond ONLY with JSON, no preamble or markdown fences.',
+          'Respond ONLY with valid JSON. No markdown fences. No preamble.',
+
         messages: [
           {
             role: 'user',
             content:
               `${opportunityTitle ? `Applying to: ${opportunityTitle}\n\n` : ''}` +
               `Draft:\n\n${sections}\n\n` +
-              'Return JSON: {"criticalGaps":[string],"strengths":[string],' +
-              '"reviewerPerspective":string}. criticalGaps: specific weaknesses ' +
-              'a reviewer would penalise. strengths: what genuinely works, or [] ' +
-              'if nothing does. reviewerPerspective: two sentences on how this ' +
-              'reads to someone assessing dozens of applications.',
+              'Return ONLY this JSON structure:' +
+              '\n' +
+              '{"criticalGaps":["string"],"strengths":["string"],"reviewerPerspective":"string"}',
           },
         ],
       }),
     });
 
+    const responseText = await res.text();
+
     if (!res.ok) {
-      const errText = await res.text().catch(() => '');
-      throw new Error(`Anthropic responded ${res.status}: ${errText}`);
+      throw new Error(
+        `AgentRouter responded ${res.status}: ${responseText.slice(0, 500)}`,
+      );
     }
 
-    const body = (await res.json()) as {
+    let body: {
       content?: { type: string; text?: string }[];
     };
-    const text = body.content?.find((c) => c.type === 'text')?.text ?? '';
-    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim()) as {
+
+    try {
+      body = JSON.parse(responseText);
+    } catch {
+      throw new Error(
+        `AgentRouter returned non-JSON response: ${responseText.slice(0, 500)}`,
+      );
+    }
+
+    const text =
+      body.content?.find((c) => c.type === 'text')?.text?.trim() ?? '';
+
+    if (!text) {
+      throw new Error('AgentRouter returned no text content');
+    }
+
+    let parsed: {
       criticalGaps?: string[];
       strengths?: string[];
       reviewerPerspective?: string;
     };
 
+    try {
+      parsed = JSON.parse(
+        text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim(),
+      );
+    } catch {
+      throw new Error(
+        `LLM returned invalid JSON: ${text.slice(0, 500)}`,
+      );
+    }
+
     return {
       ...base,
       engine: 'llm',
-      criticalGaps: [...base.criticalGaps, ...(parsed.criticalGaps ?? [])],
-      strengths: [...new Set([...base.strengths, ...(parsed.strengths ?? [])])],
+      criticalGaps: [
+        ...base.criticalGaps,
+        ...(parsed.criticalGaps ?? []),
+      ],
+      strengths: [
+        ...new Set([
+          ...base.strengths,
+          ...(parsed.strengths ?? []),
+        ]),
+      ],
       disclaimer: parsed.reviewerPerspective
         ? `${parsed.reviewerPerspective} — This is a review of what you wrote, not a prediction of the outcome.`
         : base.disclaimer,
