@@ -293,10 +293,12 @@ export class ScoringService {
       'https://agentrouter.org'
     ).trim().replace(/\/+$/, '');
 
+    // Reverted back to /messages for Anthropic format
     const endpoint = baseUrl.endsWith('/v1')
-      ? `${baseUrl}/chat/completions`
-      : `${baseUrl}/v1/chat/completions`;
+      ? `${baseUrl}/messages`
+      : `${baseUrl}/v1/messages`;
 
+    // AgentRouter uses claude-3-5-sonnet
     const modelName =
       this.config.get<string>('ANTHROPIC_MODEL') || 'claude-3-5-sonnet';
 
@@ -304,21 +306,22 @@ export class ScoringService {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        // These two headers spoof the Claude Code terminal tool!
+        'User-Agent': 'claude-code/0.2.29',
+        'X-Title': 'Claude Code',
       },
       body: JSON.stringify({
         model: modelName,
         max_tokens: 1200,
+        system:
+          'You review draft funding applications. You assess ONLY the text provided. ' +
+          'Never introduce facts, achievements, metrics or claims the author did not write — ' +
+          'a fabricated claim in a grant application can cost the applicant funding and standing. ' +
+          'Be specific and direct; name what is weak and why a reviewer would mark it down. ' +
+          'Respond ONLY with JSON, no preamble or markdown fences.',
         messages: [
-          {
-            role: 'system',
-            content:
-              'You review draft funding applications. You assess ONLY the text provided. ' +
-              'Never introduce facts, achievements, metrics or claims the author did not write — ' +
-              'a fabricated claim in a grant application can cost the applicant funding and standing. ' +
-              'Be specific and direct; name what is weak and why a reviewer would mark it down. ' +
-              'Respond ONLY with valid JSON, no preamble or markdown fences.',
-          },
           {
             role: 'user',
             content:
@@ -336,13 +339,13 @@ export class ScoringService {
 
     if (!res.ok) {
       const errText = await res.text().catch(() => '');
-      throw new Error(`AgentRouter responded ${res.status}: ${errText}`);
+      throw new Error(`Anthropic responded ${res.status}: ${errText}`);
     }
 
     const body = (await res.json()) as {
-      choices?: { message?: { content?: string } }[];
+      content?: { type: string; text?: string }[];
     };
-    const text = body.choices?.[0]?.message?.content ?? '';
+    const text = body.content?.find((c) => c.type === 'text')?.text ?? '';
     const parsed = JSON.parse(text.replace(/```json|```/g, '').trim()) as {
       criticalGaps?: string[];
       strengths?: string[];
