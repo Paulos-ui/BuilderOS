@@ -293,18 +293,20 @@ export class ScoringService {
       throw new Error('ANTHROPIC_API_KEY is not configured');
     }
 
+    // Defaulting directly to the official Anthropic URL
     const baseUrl = (
       this.config.get<string>('ANTHROPIC_BASE_URL') ||
-      'https://co.agentrouter.org'
+      'https://api.anthropic.com'
     ).trim().replace(/\/+$/, '');
 
     const endpoint = `${baseUrl}/v1/messages`;
 
+    // Defaulting to the latest Sonnet model
     const modelName =
       this.config.get<string>('ANTHROPIC_MODEL') ||
-      'claude-3-5-sonnet';
+      'claude-3-5-sonnet-20241022';
 
-    this.logger.log(`Calling AgentRouter: ${endpoint}`);
+    this.logger.log(`Calling official Anthropic: ${endpoint}`);
     this.logger.log(`Using model: ${modelName}`);
 
     const res = await fetch(endpoint, {
@@ -312,7 +314,6 @@ export class ScoringService {
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
-        'Authorization': `Bearer ${apiKey}`,
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
@@ -323,7 +324,6 @@ export class ScoringService {
           'Never introduce facts, achievements, metrics or claims the author did not write. ' +
           'Be specific and direct; name what is weak and why a reviewer would mark it down. ' +
           'Respond ONLY with valid JSON. No markdown fences. No preamble.',
-
         messages: [
           {
             role: 'user',
@@ -342,7 +342,7 @@ export class ScoringService {
 
     if (!res.ok) {
       throw new Error(
-        `AgentRouter responded ${res.status}: ${responseText.slice(0, 500)}`,
+        `Anthropic responded ${res.status}: ${responseText.slice(0, 500)}`,
       );
     }
 
@@ -354,7 +354,7 @@ export class ScoringService {
       body = JSON.parse(responseText);
     } catch {
       throw new Error(
-        `AgentRouter returned non-JSON response: ${responseText.slice(0, 500)}`,
+        `Anthropic returned non-JSON response: ${responseText.slice(0, 500)}`,
       );
     }
 
@@ -362,7 +362,7 @@ export class ScoringService {
       body.content?.find((c) => c.type === 'text')?.text?.trim() ?? '';
 
     if (!text) {
-      throw new Error('AgentRouter returned no text content');
+      throw new Error('Anthropic returned no text content');
     }
 
     let parsed: {
