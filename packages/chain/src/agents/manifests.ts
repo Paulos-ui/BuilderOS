@@ -101,8 +101,8 @@ export const AGENT_MANIFESTS: BuilderOsAgentManifest[] = [
       },
     ],
     x402Support: false,
-    active: false,
-    registerNow: false,
+    active: true,
+    registerNow: true,
   },
   {
     key: 'match',
@@ -137,8 +137,8 @@ export const AGENT_MANIFESTS: BuilderOsAgentManifest[] = [
       },
     ],
     x402Support: false,
-    active: false,
-    registerNow: false,
+    active: true,
+    registerNow: true,
   },
   {
     key: 'pay',

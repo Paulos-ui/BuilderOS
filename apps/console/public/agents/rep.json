@@ -1,0 +1,20 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "BuilderRep",
+  "description": "Converts completed grants, shipped work, and verified contributions into portable builder credentials, anchored on GOAT Network for independent verification.",
+  "image": "https://builderos.dev/agents/rep.png",
+  "services": [
+    {
+      "name": "A2A",
+      "endpoint": "https://api.builderos.dev/.well-known/agent-card.json",
+      "version": "0.3.0",
+      "skills": [
+        "credential-issuance",
+        "contribution-verification"
+      ]
+    }
+  ],
+  "x402Support": false,
+  "active": true,
+  "registrations": []
+}

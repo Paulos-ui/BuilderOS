@@ -1,0 +1,20 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "BuilderFlow",
+  "description": "Automates the logistics around building: deadline tracking, submission checklists, milestone reminders, and status syncing across concurrent programs.",
+  "image": "https://builderos.dev/agents/flow.png",
+  "services": [
+    {
+      "name": "A2A",
+      "endpoint": "https://api.builderos.dev/.well-known/agent-card.json",
+      "version": "0.3.0",
+      "skills": [
+        "deadline-tracking",
+        "workflow-automation"
+      ]
+    }
+  ],
+  "x402Support": false,
+  "active": true,
+  "registrations": []
+}

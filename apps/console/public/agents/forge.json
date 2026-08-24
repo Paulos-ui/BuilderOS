@@ -1,0 +1,33 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "ProofForge",
+  "description": "Reviews and strengthens funding applications: scores drafts against reviewer criteria, identifies gaps, and generates supporting documents grounded strictly in evidence the builder supplied.",
+  "image": "https://builderos.dev/agents/forge.png",
+  "services": [
+    {
+      "name": "A2A",
+      "endpoint": "https://api.builderos.dev/.well-known/agent-card.json",
+      "version": "0.3.0",
+      "skills": [
+        "application-scoring",
+        "document-generation",
+        "gap-analysis"
+      ],
+      "domains": [
+        "grants",
+        "accelerators"
+      ]
+    },
+    {
+      "name": "x402",
+      "endpoint": "https://api.builderos.dev/v1/x402/orders",
+      "version": "1.0.0"
+    }
+  ],
+  "x402Support": true,
+  "active": true,
+  "registrations": [],
+  "supportedTrust": [
+    "reputation"
+  ]
+}

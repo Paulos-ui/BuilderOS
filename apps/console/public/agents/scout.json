@@ -1,0 +1,34 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "BuilderScout",
+  "description": "Discovers grants, hackathons, accelerators, bounties, and ecosystem funding programs, and ranks them against a builder profile assembled from repositories, prior funding history, and on-chain activity.",
+  "image": "https://builderos.dev/agents/scout.png",
+  "services": [
+    {
+      "name": "A2A",
+      "endpoint": "https://api.builderos.dev/.well-known/agent-card.json",
+      "version": "0.3.0",
+      "skills": [
+        "opportunity-discovery",
+        "relevance-ranking",
+        "deadline-tracking"
+      ],
+      "domains": [
+        "grants",
+        "hackathons",
+        "bounties"
+      ]
+    },
+    {
+      "name": "x402",
+      "endpoint": "https://api.builderos.dev/v1/x402/orders",
+      "version": "1.0.0"
+    }
+  ],
+  "x402Support": true,
+  "active": true,
+  "registrations": [],
+  "supportedTrust": [
+    "reputation"
+  ]
+}
