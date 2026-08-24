@@ -11,6 +11,8 @@ const TABS = [
   { href: "/console", label: "AGENT RACK" },
   { href: "/console/opportunities", label: "OPPORTUNITIES" },
   { href: "/console/apply", label: "APPLY" },
+  { href: "/console/track", label: "TRACK" },
+  { href: "/console/proof", label: "PROOF" },
   { href: "/console/profile", label: "PROFILE" },
 ];
 
@@ -78,7 +80,10 @@ export default function ConsoleNav() {
         )}
       </div>
 
-      <nav aria-label="Console sections" className="flex gap-1 overflow-x-auto">
+      <nav
+        aria-label="Console sections"
+        className="flex gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         {TABS.map((tab) => {
           const active =
             tab.href === "/console"

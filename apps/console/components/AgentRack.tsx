@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useAgents } from "@/lib/use-agents";
 import ChainStatus from "./ChainStatus";
 import PageHeader from "./PageHeader";
+import PipelineStrip from "./PipelineStrip";
 import { Odometer } from "./Odometer";
 import AgentDetailPanel from "./AgentDetailPanel";
 import { RACK, TIER, PIPELINE, type RackEntry } from "./agent-rack-data";
@@ -27,6 +28,8 @@ export default function AgentRack() {
         description="Six specialised agents, each with a defined responsibility and a place in the workflow. Identity and reputation are read from the ERC-8004 registries on GOAT Network."
         status={<ChainStatus state={state} blockNumber={blockNumber} />}
       />
+
+      <PipelineStrip />
 
       <header>
         <dl className="mt-6 grid grid-cols-3 gap-4 border-b border-line/15 pb-4">

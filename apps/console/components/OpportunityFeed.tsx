@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
+import TrackButton from "./TrackButton";
 
 interface FeedItem {
   id: string;
@@ -253,11 +254,12 @@ function OpportunityRow({ item, index }: { item: FeedItem; index: number }) {
               </ul>
 
               <div className="mt-5 flex flex-wrap items-center gap-4">
+                <TrackButton opportunityId={item.id} />
                 <a
                   href={item.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-sm bg-brass px-4 py-2 font-mono text-xs tracking-wide text-ink transition-colors hover:bg-brass-bright focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-bright"
+                  className="rounded-sm border border-line/40 px-4 py-2 font-mono text-xs tracking-wide text-paper-dim transition-colors hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-bright"
                 >
                   View listing ↗
                 </a>

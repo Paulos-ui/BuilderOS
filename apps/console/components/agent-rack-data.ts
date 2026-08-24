@@ -105,15 +105,16 @@ export const RACK: RackEntry[] = [
     summary:
       "Keeps track of every deadline, checklist and milestone across all the programmes you are pursuing at once.",
     capability: "Deadline and milestone automation.",
-    tier: "development",
+    tier: "operational",
     skills: ["deadline-tracking", "workflow-automation"],
     responsibilities: [
       "One timeline across every application you have open",
       "Per-programme submission checklists",
       "Reminders before something closes, not after",
     ],
-    unavailableReason:
-      "In development. It becomes useful once you have several applications running at once, which needs ProofForge first.",
+    launchPath: "/console/track",
+    launchLabel: "Open application tracker",
+    launchHint: "LIVE · TRACKS YOUR DEADLINES",
   },
   {
     key: "match",
@@ -143,15 +144,16 @@ export const RACK: RackEntry[] = [
     summary:
       "Turns the work you complete into a portable record of proof you can carry into the next programme you apply to.",
     capability: "Proof-of-work records; on-chain anchoring planned.",
-    tier: "development",
+    tier: "operational",
     skills: ["credential-issuance", "contribution-verification"],
     responsibilities: [
       "Records completed grants and shipped work as structured proof",
       "Verifies contributions against their source before recording them",
       "Keeps the record portable, so it survives you leaving the platform",
     ],
-    unavailableReason:
-      "In development. There is nothing to record until applications are being completed through the platform.",
+    launchPath: "/console/proof",
+    launchLabel: "Open proof record",
+    launchHint: "LIVE · EXPORTABLE RECORD",
   },
   {
     key: "pay",

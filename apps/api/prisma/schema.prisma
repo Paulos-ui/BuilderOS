@@ -257,3 +257,69 @@ model EmailOtp {
   @@index([email, createdAt])
   @@map("email_otps")
 }
+
+
+enum ApplicationStage {
+  DRAFTING
+  REVIEWING
+  SUBMITTED
+  WON
+  REJECTED
+  ABANDONED
+}
+
+/// BuilderFlow — an application the builder is actively pursuing.
+model TrackedApplication {
+  id               String           @id @default(uuid())
+  builderProfileId String           @map("builder_profile_id")
+  opportunityId    String?          @map("opportunity_id")
+  title            String
+  sourceUrl        String?          @map("source_url")
+  stage            ApplicationStage @default(DRAFTING)
+  deadline         DateTime?
+  notes            String?
+  checklist        Json             @default("[]")
+  lastScore        Int?             @map("last_score")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  @@index([builderProfileId, stage])
+  @@index([deadline])
+  @@map("tracked_applications")
+}
+
+/// BuilderRep — a portable record of completed work.
+model ProofRecord {
+  id               String   @id @default(uuid())
+  builderProfileId String   @map("builder_profile_id")
+  applicationId    String?  @map("application_id")
+  kind             String
+  title            String
+  description      String?
+  evidenceUrl      String?  @map("evidence_url")
+  occurredAt       DateTime @map("occurred_at")
+  verified         Boolean  @default(false)
+  chainTxHash      String?  @map("chain_tx_hash")
+  metadata         Json     @default("{}")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@index([builderProfileId, occurredAt])
+  @@map("proof_records")
+}
+
+/// BuilderPay — metered agent usage.
+model UsageRecord {
+  id               String   @id @default(uuid())
+  builderProfileId String   @map("builder_profile_id")
+  agentKey         String   @map("agent_key")
+  operation        String
+  billable         Boolean  @default(true)
+  settled          Boolean  @default(false)
+  x402OrderId      String?  @map("x402_order_id")
+  amountMinor      Int?     @map("amount_minor")
+  currency         String?
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@index([builderProfileId, createdAt])
+  @@map("usage_records")
+}
