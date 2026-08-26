@@ -27,7 +27,7 @@ export default function ChainStatus({
     chain: {
       color: "var(--color-signal-bright)",
       label: "LIVE FROM GOAT TESTNET3",
-      detail: blockNumber ? `Block ${blockNumber}` : "ERC-8004 registries",
+      detail: "Agent identities verified on-chain",
     },
     unavailable: {
       color: "var(--color-brass-bright)",

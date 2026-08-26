@@ -101,7 +101,7 @@ export default function FlowBoard() {
   return (
     <section className="pb-16">
       <PageHeader
-        eyebrow="AG-03 · BUILDERFLOW"
+        eyebrow="TRACK · BUILDERFLOW"
         title="Application tracker"
         description="Every deadline, checklist and milestone across the programmes you are pursuing, in one timeline."
       />

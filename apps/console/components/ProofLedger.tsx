@@ -99,7 +99,7 @@ export default function ProofLedger() {
   return (
     <section className="pb-16">
       <PageHeader
-        eyebrow="AG-05 · BUILDERREP"
+        eyebrow="PROOF · BUILDERREP"
         title="Proof of work"
         description="A portable record of what you have completed. Yours to export and carry between ecosystems."
         actions={

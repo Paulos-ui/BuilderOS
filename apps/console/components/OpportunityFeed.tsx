@@ -75,10 +75,10 @@ export default function OpportunityFeed() {
     <section className="py-10">
       <header>
         <p className="font-mono text-[10px] tracking-[0.25em] text-line-bright">
-          AG-01 · BUILDERSCOUT
+          DISCOVER
         </p>
         <h1 className="mt-3 font-display text-3xl font-semibold text-paper">
-          Opportunity feed
+          Opportunities
         </h1>
         {data && (
           <p className="mt-2 max-w-2xl text-sm text-paper-dim">{data.note}</p>

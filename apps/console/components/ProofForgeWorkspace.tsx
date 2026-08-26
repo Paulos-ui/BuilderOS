@@ -104,7 +104,7 @@ export default function ProofForgeWorkspace() {
   return (
     <section className="pb-16">
       <PageHeader
-        eyebrow="AG-02 · PROOFFORGE"
+        eyebrow="REVIEW · PROOFFORGE"
         title="Application review"
         description="Paste or write your draft. ProofForge reviews what you wrote against the elements reviewers look for, and names the specific gaps that would cost you the grant."
       />

@@ -25,7 +25,7 @@ export default function AgentRack() {
       <PageHeader
         eyebrow="AGENT SYSTEM"
         title="Agent rack"
-        description="Six specialised agents, each with a defined responsibility and a place in the workflow. Identity and reputation are read from the ERC-8004 registries on GOAT Network."
+        description="Each agent handles one part of getting funded — finding opportunities, strengthening your application, tracking deadlines, and recording what you complete."
         status={<ChainStatus state={state} blockNumber={blockNumber} />}
       />
 
