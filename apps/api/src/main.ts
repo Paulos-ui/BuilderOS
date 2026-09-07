@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
+import { buildCorsOptions } from './common/cors';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -16,10 +17,9 @@ async function bootstrap() {
     }),
   );
 
-  app.enableCors({
-    origin: process.env.APP_BASE_URL ?? 'http://localhost:3000',
-    credentials: true, // required for the httpOnly refresh cookie
-  });
+  // Allowlist lives in common/cors.ts — a single origin string cannot serve
+  // more than one deployed frontend.
+  app.enableCors(buildCorsOptions());
 
   const port = process.env.PORT ?? 4000;
   await app.listen(port);
