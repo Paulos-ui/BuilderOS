@@ -13,11 +13,23 @@ import {
   type SignInMethods,
 } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import {
+  discoverWallets,
+  type DiscoveredWallet,
+  type Eip1193Provider,
+} from "@/lib/wallets";
 import { BuilderOsLogo } from "./BuilderOsLogo";
 import OtpInput from "./OtpInput";
 
 const LANDING_URL =
   process.env.NEXT_PUBLIC_LANDING_URL ?? "https://builderos1.vercel.app";
+
+/** Install links for the case where no wallet is detected at all. */
+const WALLET_LINKS = [
+  { name: "MetaMask", href: "https://metamask.io/download/" },
+  { name: "OKX Wallet", href: "https://www.okx.com/web3" },
+  { name: "Rabby", href: "https://rabby.io/" },
+];
 
 /** Where a signed-in builder lands: the feed, not an empty dashboard. */
 const POST_SIGNIN = "/console";
@@ -25,14 +37,8 @@ const POST_SIGNIN = "/console";
 type Tab = "email" | "wallet";
 type Step = "enter-email" | "enter-code";
 
-interface EthereumProvider {
-  request(args: { method: string; params?: unknown[] }): Promise<unknown>;
-}
-
-function injectedProvider(): EthereumProvider | null {
-  if (typeof window === "undefined") return null;
-  return (window as unknown as { ethereum?: EthereumProvider }).ethereum ?? null;
-}
+/** Wallet-side error shapes we care about, per EIP-1193. */
+const USER_REJECTED = 4001;
 
 export default function SignInPanel() {
   const { onSignedIn } = useAuth();
@@ -55,6 +61,11 @@ export default function SignInPanel() {
   // and then yanking it away once the answer arrives.
   const [methods, setMethods] = useState<SignInMethods | null>(null);
 
+  // Wallets announce themselves within milliseconds, so this is populated
+  // before most people finish reading the heading.
+  const [wallets, setWallets] = useState<DiscoveredWallet[]>([]);
+  const [scanned, setScanned] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
     void signInMethods().then((m) => {
@@ -62,6 +73,17 @@ export default function SignInPanel() {
     });
     return () => {
       cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const stop = discoverWallets(setWallets);
+    // Matches the legacy fallback window in discoverWallets, so "no wallet"
+    // is only claimed after every provider has had a chance to answer.
+    const t = setTimeout(() => setScanned(true), 350);
+    return () => {
+      stop();
+      clearTimeout(t);
     };
   }, []);
 
@@ -117,40 +139,41 @@ export default function SignInPanel() {
     }
   }
 
-  async function connectWallet() {
+  async function connectWallet(provider: Eip1193Provider, label: string) {
     if (busy) return;
-    const provider = injectedProvider();
-    if (!provider) {
-      setError(
-        "No browser wallet detected. Install MetaMask, or sign in with email.",
-      );
-      return;
-    }
     setError(null);
     try {
-      setBusy("REQUESTING ACCOUNT");
+      setBusy("OPENING WALLET");
       const accounts = (await provider.request({
         method: "eth_requestAccounts",
       })) as string[];
       const address = accounts?.[0];
-      if (!address) throw new Error("The wallet returned no account.");
+      if (!address) throw new Error(`${label} returned no account.`);
 
-      setBusy("REQUESTING CHALLENGE");
+      setBusy("PREPARING SIGNATURE");
       const { message } = await walletChallenge(address);
 
-      setBusy("AWAITING SIGNATURE");
+      setBusy("WAITING ON YOU");
       const signature = (await provider.request({
         method: "personal_sign",
         params: [message, address],
       })) as string;
 
-      setBusy("VERIFYING");
+      setBusy("SIGNING IN");
       await walletVerify(message, signature);
       await onSignedIn();
       router.replace(POST_SIGNIN);
     } catch (err) {
-      // 4001 = user rejected. Declining to sign is a choice, not an error.
-      if ((err as { code?: number })?.code === 4001) {
+      // Declining to sign is a choice, not an error — say nothing and let them
+      // try again. -32002 means a wallet popup is already open, which is also
+      // not a failure worth shouting about.
+      const code = (err as { code?: number })?.code;
+      if (code === USER_REJECTED) {
+        setBusy(null);
+        return;
+      }
+      if (code === -32002) {
+        setError(`${label} is already asking — check for an open popup.`);
         setBusy(null);
         return;
       }
@@ -159,7 +182,7 @@ export default function SignInPanel() {
           ? err.message
           : err instanceof Error
             ? err.message
-            : "Wallet sign-in failed.",
+            : `Couldn't finish signing in with ${label}.`,
       );
     } finally {
       setBusy(null);
@@ -200,7 +223,7 @@ export default function SignInPanel() {
               </>
             )
           ) : (
-            "Private beta. Signature-based access — no password, no shared secret."
+            "Private beta."
           )}
         </p>
 
@@ -319,21 +342,96 @@ export default function SignInPanel() {
             </form>
           ) : (
             <div>
+              {/*
+                One line, stated once. The previous copy explained at length
+                that this was "a signature, not a transaction — it costs
+                nothing and moves no funds", which is accurate but reads as
+                reassurance, and volunteered reassurance invites the doubt it
+                means to settle.
+              */}
               <p className="text-sm leading-relaxed text-paper-dim">
-                Sign a message with your wallet to prove you control the
-                address. This is a signature, not a transaction — it costs
-                nothing and moves no funds.
+                Sign a message to prove the address is yours. No transaction,
+                no gas.
               </p>
-              <button
-                onClick={connectWallet}
-                disabled={busy !== null}
-                className="mt-5 w-full cursor-pointer rounded-sm bg-brass px-6 py-3 font-mono text-sm tracking-wide text-ink transition-colors hover:bg-brass-bright focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-bright disabled:cursor-wait disabled:opacity-60"
-              >
-                {busy ?? "Connect wallet"}
-              </button>
-              <p className="mt-3 font-mono text-[10px] leading-relaxed text-paper-dim/55">
-                Browser wallets only for now — MetaMask, Rabby, Brave.
-              </p>
+
+              {wallets.length > 0 ? (
+                <div className="mt-5 space-y-2">
+                  {wallets.map((w) => (
+                    <button
+                      key={w.id}
+                      onClick={() => void connectWallet(w.provider, w.name)}
+                      disabled={busy !== null}
+                      className="group flex w-full cursor-pointer items-center gap-3 rounded-sm border border-line/30 bg-ink/50 px-4 py-3 text-left transition-colors hover:border-brass-bright/60 hover:bg-ink-2/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brass-bright disabled:cursor-wait disabled:opacity-50"
+                    >
+                      {w.icon ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={w.icon}
+                          alt=""
+                          aria-hidden="true"
+                          className="size-6 shrink-0 rounded-sm"
+                        />
+                      ) : (
+                        <span
+                          aria-hidden="true"
+                          className="size-6 shrink-0 rounded-sm border border-line/40 bg-ink"
+                        />
+                      )}
+                      <span className="flex-1 font-mono text-sm tracking-wide text-paper">
+                        {w.name}
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className="font-mono text-[10px] tracking-[0.2em] text-paper-dim/40 transition-colors group-hover:text-brass-bright"
+                      >
+                        →
+                      </span>
+                    </button>
+                  ))}
+
+                  {busy && (
+                    <p
+                      role="status"
+                      className="pt-1 font-mono text-[10px] tracking-[0.2em] text-brass-bright/85"
+                    >
+                      {busy}
+                    </p>
+                  )}
+
+                  {wallets.length > 1 && (
+                    <p className="pt-1 font-mono text-[10px] leading-relaxed text-paper-dim/45">
+                      {wallets.length} wallets detected.
+                    </p>
+                  )}
+                </div>
+              ) : scanned ? (
+                <div className="mt-5 rounded-sm border border-line/25 bg-ink/40 px-4 py-4">
+                  <p className="text-sm text-paper-dim">
+                    No wallet extension detected in this browser.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
+                    {WALLET_LINKS.map((w) => (
+                      <a
+                        key={w.name}
+                        href={w.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-[11px] tracking-wide text-line-bright underline underline-offset-4 transition-colors hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brass-bright"
+                      >
+                        {w.name}
+                      </a>
+                    ))}
+                  </div>
+                  <p className="mt-3 font-mono text-[10px] leading-relaxed text-paper-dim/50">
+                    Install one, then reload this page.
+                  </p>
+                </div>
+              ) : (
+                // Sub-350ms in practice; present so the panel doesn't jump.
+                <p className="mt-5 font-mono text-[10px] tracking-[0.2em] text-paper-dim/40">
+                  DETECTING WALLETS…
+                </p>
+              )}
 
               {/*
                 Email's status, stated plainly. A waitlisted builder arrives
@@ -342,25 +440,16 @@ export default function SignInPanel() {
                 mono label match the module headers in the console rack, so
                 this reads as instrumentation rather than an error.
               */}
+              {/*
+                Was three paragraphs. Anyone here has already chosen to use a
+                wallet, so email's status is a footnote — one line, in the
+                instrumentation voice used across the rack.
+              */}
               {methods && !methods.email && (
-                <div className="mt-7 border-t border-line/15 pt-5">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <p className="font-mono text-[10px] tracking-[0.22em] text-paper-dim/50">
-                      EMAIL SIGN-IN
-                    </p>
-                    <p className="font-mono text-[10px] tracking-[0.18em] text-brass-bright/85">
-                      PROVISIONING
-                    </p>
-                  </div>
-                  <p className="mt-2.5 text-xs leading-relaxed text-paper-dim/70">
-                    {methods.emailNotice}
-                  </p>
-                  <p className="mt-2 text-xs leading-relaxed text-paper-dim/55">
-                    Your waitlist place is held against the address you signed
-                    up with. It links to your wallet automatically once email
-                    access opens.
-                  </p>
-                </div>
+                <p className="mt-6 border-t border-line/15 pt-4 font-mono text-[10px] leading-relaxed tracking-wide text-paper-dim/45">
+                  EMAIL SIGN-IN ·{" "}
+                  <span className="text-brass-bright/70">PROVISIONING</span>
+                </p>
               )}
             </div>
           )}
