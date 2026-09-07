@@ -2,6 +2,9 @@
 import {
   Body,
   Controller,
+  Get,
+  HttpException,
+  HttpStatus,
   Post,
   Req,
   Res,
@@ -27,6 +30,30 @@ export class AuthController {
     private readonly config: ConfigService,
   ) {}
 
+  /**
+   * Which sign-in methods this deployment actually supports.
+   *
+   * The console reads this instead of hardcoding assumptions, so enabling
+   * email later is one env var on the API — no frontend rebuild. Worth
+   * remembering that NEXT_PUBLIC_* values are baked in at build time, so a
+   * build-time flag would have meant redeploying the console to flip it.
+   */
+  @Get('methods')
+  methods() {
+    const emailEnabled =
+      this.config.get<string>('EMAIL_SIGNIN_ENABLED')?.toLowerCase() === 'true';
+
+    return {
+      wallet: true,
+      email: emailEnabled,
+      // Shown verbatim in the console's maintenance notice. Kept server-side
+      // so the message can change without a frontend deploy.
+      emailNotice: emailEnabled
+        ? null
+        : 'Email sign-in arrives once our sending domain is verified. Connect a wallet to get in today.',
+    };
+  }
+
   @Post('wallet/challenge')
   walletChallenge(@Body() dto: WalletChallengeDto) {
     return this.authService.walletChallenge(dto.address);
@@ -50,9 +77,36 @@ export class AuthController {
     };
   }
 
+  /**
+   * Email sign-in is disabled during the private beta.
+   *
+   * Hiding the tab in the console is presentation, not enforcement — the
+   * endpoint stays reachable by anyone with curl. So the check lives here,
+   * where it actually holds.
+   *
+   * Set EMAIL_SIGNIN_ENABLED=true once a sending domain is verified in
+   * Resend. Until then Resend only delivers to the account owner, so every
+   * other tester would get a code they never receive while a valid OTP row
+   * sits in the database — worse than a clean "not available yet".
+   */
+  private assertEmailSignInEnabled(): void {
+    const enabled =
+      this.config.get<string>('EMAIL_SIGNIN_ENABLED')?.toLowerCase() === 'true';
+
+    if (!enabled) {
+      // 503 rather than 404: the route exists and is coming back. A 404
+      // would suggest the client is calling the wrong path.
+      throw new HttpException(
+        'Email sign-in is not available during the private beta. Connect a wallet instead.',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+  }
+
   /** Issues a 6-digit sign-in code. */
   @Post('email/otp')
   requestOtp(@Body() dto: RequestOtpDto) {
+    this.assertEmailSignInEnabled();
     return this.otpService.issue(dto.email);
   }
 
@@ -62,6 +116,10 @@ export class AuthController {
     @Body() dto: VerifyOtpDto,
     @Res({ passthrough: true }) res: Response,
   ) {
+    // Gated too, so codes issued before the flag was flipped off cannot be
+    // redeemed afterwards.
+    this.assertEmailSignInEnabled();
+
     const email = await this.otpService.verify(dto.email, dto.code);
     const tokens = await this.authService.startEmailSession(email);
     this.setRefreshCookie(res, tokens);

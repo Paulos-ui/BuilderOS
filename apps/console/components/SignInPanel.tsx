@@ -8,7 +8,9 @@ import {
   verifyOtp,
   walletChallenge,
   walletVerify,
+  signInMethods,
   ApiError,
+  type SignInMethods,
 } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { BuilderOsLogo } from "./BuilderOsLogo";
@@ -36,7 +38,9 @@ export default function SignInPanel() {
   const { onSignedIn } = useAuth();
   const router = useRouter();
 
-  const [tab, setTab] = useState<Tab>("email");
+  // Wallet is the default tab now: it is the method that works today, so it
+  // should not take a click to reach.
+  const [tab, setTab] = useState<Tab>("wallet");
   const [step, setStep] = useState<Step>("enter-email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -46,6 +50,22 @@ export default function SignInPanel() {
   const [delivery, setDelivery] = useState<"sent" | "logged" | "failed" | null>(
     null,
   );
+
+  // null while the probe is in flight — lets us avoid flashing the email form
+  // and then yanking it away once the answer arrives.
+  const [methods, setMethods] = useState<SignInMethods | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void signInMethods().then((m) => {
+      if (!cancelled) setMethods(m);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const emailEnabled = methods?.email ?? false;
 
   // Resend cooldown ticker.
   useEffect(() => {
@@ -180,11 +200,16 @@ export default function SignInPanel() {
               </>
             )
           ) : (
-            "Private beta. Use the address you joined with."
+            "Private beta. Signature-based access — no password, no shared secret."
           )}
         </p>
 
-        {step === "enter-email" && (
+        {/*
+          The tab strip only earns its place when there is a real choice to
+          make. During the wallet-only beta a single disabled tab would be
+          noise, so the email path is presented below as a status row instead.
+        */}
+        {step === "enter-email" && emailEnabled && (
           <div
             role="tablist"
             aria-label="Sign-in method"
@@ -257,7 +282,7 @@ export default function SignInPanel() {
                 </button>
               </div>
             </div>
-          ) : tab === "email" ? (
+          ) : tab === "email" && emailEnabled ? (
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -309,6 +334,34 @@ export default function SignInPanel() {
               <p className="mt-3 font-mono text-[10px] leading-relaxed text-paper-dim/55">
                 Browser wallets only for now — MetaMask, Rabby, Brave.
               </p>
+
+              {/*
+                Email's status, stated plainly. A waitlisted builder arrives
+                expecting to use the address they signed up with, so silence
+                here reads as "my signup didn't register". The brass rule and
+                mono label match the module headers in the console rack, so
+                this reads as instrumentation rather than an error.
+              */}
+              {methods && !methods.email && (
+                <div className="mt-7 border-t border-line/15 pt-5">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="font-mono text-[10px] tracking-[0.22em] text-paper-dim/50">
+                      EMAIL SIGN-IN
+                    </p>
+                    <p className="font-mono text-[10px] tracking-[0.18em] text-brass-bright/85">
+                      PROVISIONING
+                    </p>
+                  </div>
+                  <p className="mt-2.5 text-xs leading-relaxed text-paper-dim/70">
+                    {methods.emailNotice}
+                  </p>
+                  <p className="mt-2 text-xs leading-relaxed text-paper-dim/55">
+                    Your waitlist place is held against the address you signed
+                    up with. It links to your wallet automatically once email
+                    access opens.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>

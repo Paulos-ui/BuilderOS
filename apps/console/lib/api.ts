@@ -156,6 +156,36 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 // ── Auth ─────────────────────────────────────────────────────────────────
 
+export interface SignInMethods {
+  wallet: boolean;
+  email: boolean;
+  emailNotice: string | null;
+}
+
+/**
+ * Asks the API which sign-in methods are live.
+ *
+ * Deliberately a runtime call rather than a NEXT_PUBLIC_* build flag:
+ * NEXT_PUBLIC values are frozen into the bundle at build time, so turning
+ * email back on would mean rebuilding and redeploying the console. This way
+ * it is one env var on the API.
+ */
+export async function signInMethods(): Promise<SignInMethods> {
+  try {
+    return await api<SignInMethods>("/v1/auth/methods");
+  } catch {
+    // If the probe fails (cold Render instance, network blip) assume the
+    // conservative shape: wallet works, email doesn't. Better to under-offer
+    // than to show an email form that 503s on submit.
+    return {
+      wallet: true,
+      email: false,
+      emailNotice:
+        "Email sign-in is temporarily unavailable. Connect a wallet to continue.",
+    };
+  }
+}
+
 export function requestOtp(email: string) {
   return api<{
     sent: boolean;
