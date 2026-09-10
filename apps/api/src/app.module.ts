@@ -11,6 +11,8 @@ import { OpportunitiesModule } from './opportunities/opportunities.module';
 import { ProofForgeModule } from './proofforge/proofforge.module';
 import { FlowModule } from './flow/flow.module';
 import { RepModule } from './rep/rep.module';
+import { MatchModule } from './match/match.module';
+import { PayModule } from './pay/pay.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -32,6 +34,10 @@ import { HealthController } from './health.controller';
     ProofForgeModule,
     FlowModule,
     RepModule,
+    // AG-04 and AG-06. Both were defined in the agent manifests and neither had
+    // an implementation, which is what made the console's "4/6" honest.
+    MatchModule,
+    PayModule,
   ],
   controllers: [HealthController],
   providers: [

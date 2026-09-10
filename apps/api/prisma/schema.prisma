@@ -86,6 +86,18 @@ model AuthNonce {
 }
 
 /// Single-use tokens for passwordless email magic-link sign-in.
+///
+/// UNUSED as of the wallet-first sign-in change: nothing in `src/` reads or
+/// writes this model, and email OTP goes through `/v1/auth/email/otp` instead.
+///
+/// Kept deliberately rather than dropped. Removing it means a destructive
+/// migration against the production Neon database, and the only thing that
+/// buys is one fewer empty table. Magic-link sign-in also comes back the
+/// moment a custom domain lets Resend verify a sending address, which is
+/// already on the roadmap — so this would likely be dropped and recreated.
+///
+/// If it is still unused once email sign-in ships properly, drop it then, in
+/// its own migration, with nothing else in the change.
 model MagicLinkToken {
   id        String    @id @default(uuid())
   email     String
@@ -105,9 +117,14 @@ model BuilderProfile {
   chains         Json     @default("[]")
   languages      Json     @default("[]")
   bio            String?
-  /// pgvector embedding for opportunity-matching similarity search.
-  /// Unsupported by Prisma Client's query builder directly — read/write via
-  /// $queryRaw / $executeRaw (see src/profiles/profiles.repository.ts).
+  /// pgvector embedding of the profile text, used by BuilderMatch to rank
+  /// collaborators and by BuilderScout to rank opportunities.
+  /// Unsupported by Prisma Client's query builder, so it is read and written
+  /// via $queryRawUnsafe / $executeRawUnsafe. Written by
+  /// ProfilesService.refreshEmbedding(); read by MatchService.
+  /// NULL means "not enough profile text to embed" and is meaningful — callers
+  /// must skip those rows rather than substitute a zero vector, which would
+  /// read as maximally similar to everything.
   embedding      Unsupported("vector(1536)")?
   updatedAt      DateTime @updatedAt @map("updated_at")
   createdAt      DateTime @default(now()) @map("created_at")
@@ -321,5 +338,64 @@ model UsageRecord {
   createdAt        DateTime @default(now()) @map("created_at")
 
   @@index([builderProfileId, createdAt])
+  @@index([x402OrderId])
   @@map("usage_records")
+}
+
+enum X402OrderStatus {
+  /// Challenge issued, no payment presented yet.
+  REQUIRED
+  /// Signature checked and the authorization is valid.
+  VERIFIED
+  /// Authorization broadcast on-chain and confirmed.
+  SETTLED
+  /// Verification or settlement failed. `failureReason` says which.
+  FAILED
+}
+
+/// BuilderPay (AG-06) — one row per x402 payment challenge and its resolution.
+///
+/// This table exists for replay protection above everything else. An EIP-3009
+/// `transferWithAuthorization` signature is a bearer instrument: whoever holds
+/// it can present it, and the contract will honour it once. Without a record of
+/// spent nonces, a client could replay one signed authorization against every
+/// paid endpoint and be served each time — the transfer would only ever land
+/// once on-chain, so nothing would look broken from the payer's side. The
+/// unique index on `nonce` is the enforcement point.
+///
+/// It is also the settlement ledger the console reads, which is why failed
+/// attempts are kept rather than deleted: a builder who was charged and not
+/// served needs that visible, and so do we.
+model X402Order {
+  id               String          @id @default(uuid())
+  builderProfileId String?         @map("builder_profile_id")
+  agentKey         String          @map("agent_key")
+  operation        String
+  /// Canonical URL of the thing being paid for, as sent in the challenge.
+  resource         String
+  scheme           String          @default("exact")
+  network          String
+  /// ERC-20 contract the payment is denominated in.
+  asset            String
+  payTo            String          @map("pay_to")
+  /// Decimal string, not Int. Token amounts are uint256 and an 18-decimal
+  /// asset overflows a 32-bit column; more importantly this exact string is
+  /// part of the signed payload, so any numeric round-trip risks producing a
+  /// value that no longer verifies.
+  amountMinor      String          @map("amount_minor")
+  currency         String
+  payerAddress     String?         @map("payer_address")
+  /// The EIP-3009 authorization nonce. Unique — this is the replay guard.
+  nonce            String?         @unique
+  status           X402OrderStatus @default(REQUIRED)
+  settlementTx     String?         @map("settlement_tx")
+  failureReason    String?         @map("failure_reason")
+  validBefore      DateTime?       @map("valid_before")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  verifiedAt       DateTime?       @map("verified_at")
+  settledAt        DateTime?       @map("settled_at")
+
+  @@index([builderProfileId, createdAt])
+  @@index([status, createdAt])
+  @@map("x402_orders")
 }

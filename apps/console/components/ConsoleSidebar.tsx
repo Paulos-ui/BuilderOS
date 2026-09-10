@@ -21,6 +21,14 @@ import { useAuth } from "@/lib/auth-context";
  * because a 200px sidebar on a 375px screen leaves no room for the work.
  */
 
+/**
+ * The WORK group is in pipeline order on purpose: Discover → Review → Track →
+ * Collaborate → Proof → Settlement is the same sequence the agents hand work
+ * along, so reading the rail top to bottom teaches the workflow. Two entries
+ * were missing while their agents were already shipped — BuilderMatch and
+ * BuilderPay had no way in from the nav at all, which is most of why the rack
+ * kept describing them as unfinished.
+ */
 const GROUPS = [
   {
     label: "WORK",
@@ -29,7 +37,9 @@ const GROUPS = [
       { href: "/console/opportunities", label: "Discover", hint: "Find funding" },
       { href: "/console/apply", label: "Review", hint: "Strengthen a draft" },
       { href: "/console/track", label: "Track", hint: "Deadlines and progress" },
+      { href: "/console/collaborators", label: "Collaborate", hint: "Builders who fill gaps" },
       { href: "/console/proof", label: "Proof", hint: "What you've completed" },
+      { href: "/console/settlement", label: "Settlement", hint: "Usage and payments" },
     ],
   },
   {

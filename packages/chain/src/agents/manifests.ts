@@ -33,7 +33,19 @@ export interface BuilderOsAgentManifest extends AgentManifest {
 }
 
 const API_BASE = process.env.BUILDEROS_API_BASE ?? 'https://api.builderos.dev';
-const SITE_BASE = process.env.BUILDEROS_SITE_BASE ?? 'https://builderos.dev';
+
+/**
+ * Origin serving the agent icons referenced below.
+ *
+ * Defaults to the live Vercel deployment rather than `builderos.dev`, which we
+ * do not own yet. A default that points at an unregistered domain means every
+ * registration performed without the env var set writes a permanently dead
+ * image URL into a public registry — and the registration succeeds, so nothing
+ * surfaces the mistake. Point this at the apex domain on the same commit that
+ * the domain starts resolving.
+ */
+const SITE_BASE =
+  process.env.BUILDEROS_SITE_BASE ?? 'https://builderos1.vercel.app';
 
 export const AGENT_MANIFESTS: BuilderOsAgentManifest[] = [
   {
@@ -41,7 +53,7 @@ export const AGENT_MANIFESTS: BuilderOsAgentManifest[] = [
     name: 'BuilderScout',
     description:
       'Discovers grants, hackathons, accelerators, bounties, and ecosystem funding programs, and ranks them against a builder profile assembled from repositories, prior funding history, and on-chain activity.',
-    image: `${SITE_BASE}/agents/scout.png`,
+    image: `${SITE_BASE}/agents/scout.svg`,
     services: [
       {
         name: 'A2A',
@@ -66,7 +78,7 @@ export const AGENT_MANIFESTS: BuilderOsAgentManifest[] = [
     name: 'ProofForge',
     description:
       'Reviews and strengthens funding applications: scores drafts against reviewer criteria, identifies gaps, and generates supporting documents grounded strictly in evidence the builder supplied.',
-    image: `${SITE_BASE}/agents/forge.png`,
+    image: `${SITE_BASE}/agents/forge.svg`,
     services: [
       {
         name: 'A2A',
@@ -91,7 +103,7 @@ export const AGENT_MANIFESTS: BuilderOsAgentManifest[] = [
     name: 'BuilderFlow',
     description:
       'Automates the logistics around building: deadline tracking, submission checklists, milestone reminders, and status syncing across concurrent programs.',
-    image: `${SITE_BASE}/agents/flow.png`,
+    image: `${SITE_BASE}/agents/flow.svg`,
     services: [
       {
         name: 'A2A',
@@ -109,7 +121,7 @@ export const AGENT_MANIFESTS: BuilderOsAgentManifest[] = [
     name: 'BuilderMatch',
     description:
       'Connects builders with complementary skills, mentors, and collaborators around a specific opportunity, matched on demonstrated track record rather than self-reported profiles.',
-    image: `${SITE_BASE}/agents/match.png`,
+    image: `${SITE_BASE}/agents/match.svg`,
     services: [
       {
         name: 'A2A',
@@ -127,7 +139,7 @@ export const AGENT_MANIFESTS: BuilderOsAgentManifest[] = [
     name: 'BuilderRep',
     description:
       'Converts completed grants, shipped work, and verified contributions into portable builder credentials, anchored on GOAT Network for independent verification.',
-    image: `${SITE_BASE}/agents/rep.png`,
+    image: `${SITE_BASE}/agents/rep.svg`,
     services: [
       {
         name: 'A2A',
@@ -145,7 +157,7 @@ export const AGENT_MANIFESTS: BuilderOsAgentManifest[] = [
     name: 'BuilderPay',
     description:
       'Settles grant disbursements, bounty payouts, and inter-agent service payments over x402 on GOAT Network.',
-    image: `${SITE_BASE}/agents/pay.png`,
+    image: `${SITE_BASE}/agents/pay.svg`,
     services: [
       {
         name: 'x402',

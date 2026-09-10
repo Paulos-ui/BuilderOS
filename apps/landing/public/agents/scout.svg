@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="256" height="256" role="img" stroke-linecap="square" stroke-linejoin="miter">
+  <title>BuilderScout — AG-01</title>
+  <desc>Discovery agent. A radial sweep across three range arcs, with one contact marked in brass.</desc>
+  <rect width="48" height="48" fill="#0b1420"/>
+  <g fill="none" stroke="#eae4d3" stroke-width="1" opacity="0.28">
+    <path d="M4 10V4h6"/>
+    <path d="M38 4h6v6"/>
+    <path d="M4 38v6h6"/>
+    <path d="M44 38v6h-6"/>
+  </g>
+  <g fill="none">
+    <g stroke="#eae4d3" stroke-width="1" opacity="0.35">
+      <path d="M27.9 19.4a6 6 0 0 1 0 9.2"/>
+      <path d="M31.1 15.6a11 11 0 0 1 0 16.8"/>
+      <path d="M33.6 12.5a15 15 0 0 1 0 23"/>
+    </g>
+    <path d="M24 24h14" stroke="#eae4d3" stroke-width="1.4"/>
+    <circle cx="24" cy="24" r="1.6" fill="#eae4d3"/>
+    <rect x="32.9" y="18.3" width="2.4" height="2.4" fill="#b8863b"/>
+  </g>
+  <path d="M19 43.5h10" stroke="#b8863b" stroke-width="1.4" fill="none"/>
+</svg>

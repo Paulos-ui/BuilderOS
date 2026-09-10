@@ -56,11 +56,26 @@ type, different behaviour.
 | Component | Motion | Why it earns its place |
 |---|---|---|
 | `Odometer` | digits roll vertically, leftmost settling first | values read off a chain should *count*, not fade |
-| `SignalMeter` | segmented VU fill with overshoot | reputation is a reading, not a progress bar |
-| `RackModule` | boot sequence, LED flicker then settle | the rack powers on |
-| `ScanSweep` | slow low-contrast refresh line | instrument re-reading inputs; peripheral by design |
-| `PatchPulse` | pulse travels Scout → Forge connector | makes the handoff dependency legible |
+| `AgentSigil` | each mark animates only while its rack row is open | the artwork is an instrument responding to you, not decoration |
 | `Settlement` | two-phase, drift then stillness | encodes GOAT's finality model |
+
+`Settlement` is used on the settlement ledger, where an x402 order maps onto
+the two phases exactly: a `VERIFIED` order holds a valid EIP-3009
+authorization that has not been broadcast — real, usable, and still capable of
+never landing — which is what `sequenced` means. `SETTLED` is irreversible, so
+the drift stops.
+
+### Removed from this table
+
+`ScanSweep` and `PatchPulse` were described here for months and never existed
+in the codebase. `RackModule` and `SignalMeter` did exist, but the rack rebuild
+left them with no callers — `SignalMeter` in particular has nothing honest to
+render now that fabricated reputation figures are gone and the ERC-8004
+Reputation Registry read is not wired up. All four are deleted rather than
+documented.
+
+A design document that lists components which do not exist is worse than one
+that lists fewer, because the next person budgets against it.
 
 ## On the `ui-ux-pro-max` skill
 
@@ -90,9 +105,14 @@ Running its checklist against our code found three real bugs:
 
 ## Accessibility
 
-- `prefers-reduced-motion` collapses all durations globally (`app/globals.css`)
+- `prefers-reduced-motion` collapses all durations globally (`app/globals.css`),
+  including the sigil keyframes
 - Interactive modules are real `<button>`s with `aria-expanded` and labels
-- The signal meter carries a text alternative describing the reading
+- Rack rows own their expanded region via `aria-controls`, so the disclosure is
+  announced rather than merely animated
 - Unregistered agents show `NO SIGNAL`, never `0.0` — a zero would claim we
   measured and found nothing, which is false and worse
-- Decorative motion (`ScanSweep`, `PatchPulse`, seal ring) is `aria-hidden`
+- Sigils are `aria-hidden` unless given a `title`; the row's own text already
+  names the agent, so an unlabelled mark would be read out twice
+- Decorative motion (drift, seal ring, score bars) is `aria-hidden`, and the
+  match score carries a text alternative giving the reading

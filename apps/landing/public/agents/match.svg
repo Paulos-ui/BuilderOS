@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="256" height="256" role="img" stroke-linecap="square" stroke-linejoin="miter">
+  <title>BuilderMatch — AG-04</title>
+  <desc>Collaboration agent. A socket and a tooth seating into one another — two complementary forms rather than two identical halves — meeting at a shared node in brass.</desc>
+  <rect width="48" height="48" fill="#0b1420"/>
+  <g fill="none" stroke="#eae4d3" stroke-width="1" opacity="0.28">
+    <path d="M4 10V4h6"/>
+    <path d="M38 4h6v6"/>
+    <path d="M4 38v6h6"/>
+    <path d="M44 38v6h-6"/>
+  </g>
+  <g fill="none">
+    <g stroke="#eae4d3" stroke-width="1" opacity="0.3">
+      <path d="M12 17v14"/>
+      <path d="M36 17v14"/>
+    </g>
+    <path d="M17 14l7 10-7 10" stroke="#eae4d3" stroke-width="1.5" opacity="0.5"/>
+    <path d="M26 17l5 7-5 7" stroke="#eae4d3" stroke-width="1.6"/>
+    <circle cx="24.8" cy="24" r="1.7" fill="#b8863b"/>
+  </g>
+  <path d="M19 43.5h10" stroke="#b8863b" stroke-width="1.4" fill="none"/>
+</svg>

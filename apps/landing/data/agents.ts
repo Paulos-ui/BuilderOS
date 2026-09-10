@@ -1,3 +1,28 @@
+/**
+ * The six agents, as drawn on the landing page constellation.
+ *
+ * ── Why this list is allowed to exist separately ──────────────────────────
+ *
+ * `/v1/agents` is the source of truth for what is shipped. This file duplicates
+ * part of it, which normally would not be acceptable — but the landing page is
+ * a static marketing site and its hero must render instantly for someone who
+ * has never signed in. Fetching the console API would put a cold Render
+ * instance (~30s to wake) in front of the first thing a grant reviewer sees.
+ *
+ * The `x`/`y` coordinates are genuinely local: they are constellation positions
+ * with no meaning to the API.
+ *
+ * ── The part that must not drift ──────────────────────────────────────────
+ *
+ * `status` here was wrong for weeks. BuilderMatch and BuilderPay were both
+ * built, deployed and answering requests while this file — the public one —
+ * described them as "planned". Understating shipped work on the page we point
+ * funders at is the most expensive possible direction for this bug to run.
+ *
+ * When an agent's status changes in `apps/api/src/agents/agents.config.ts`,
+ * change it here in the same commit.
+ */
+
 export type AgentId =
   | "scout"
   | "forge"
@@ -58,8 +83,8 @@ export const AGENTS: Agent[] = [
     name: "BuilderMatch",
     role: "Collaboration",
     description:
-      "Connects builders with complementary skills, mentors, and co-founders around a specific opportunity or track — matched on proven track record, not a static profile.",
-    status: "planned",
+      "Finds builders whose strengths cover the gaps in yours, ranked on complementary skills, shared ecosystems and recorded results rather than on how similar two profiles look. It says when it has too little to go on instead of returning filler.",
+    status: "beta",
     x: 82,
     y: 62,
   },
@@ -80,13 +105,20 @@ export const AGENTS: Agent[] = [
     name: "BuilderPay",
     role: "Settlement",
     description:
-      "Planned: settlement for grant disbursement and bounty payouts over x402 on GOAT Network, so funding can move at the speed of the work.",
-    status: "planned",
+      "Meters paid agent calls and answers them with a real HTTP 402 challenge over x402 on GOAT Network. Your wallet signs; BuilderOS never holds a private key. Authorizations are verified against the asset's own EIP-712 domain and recorded — broadcasting them needs an x402 facilitator for GOAT, which does not exist yet.",
+    status: "beta",
     x: 24,
     y: 70,
   },
 ];
 
+/**
+ * The route the landing page walks a visitor through.
+ *
+ * Keep this the same length as `NODES` in `components/PipelineSection.tsx` —
+ * that array supplies one coordinate per step and the two are indexed
+ * together.
+ */
 export const PIPELINE_STEPS = [
   {
     label: "Discover",
@@ -107,5 +139,10 @@ export const PIPELINE_STEPS = [
     label: "Prove",
     agent: "BuilderRep",
     detail: "Completed work becomes a structured, portable record of proof.",
+  },
+  {
+    label: "Settle",
+    agent: "BuilderPay",
+    detail: "Paid agent calls metered and settled over x402. Your wallet signs.",
   },
 ] as const;

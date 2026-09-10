@@ -2,7 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   AGENT_DEFINITIONS,
   FINALITY_CONFIRMATIONS,
+  statusFor,
   type AgentDefinition,
+  type AgentStatus,
 } from './agents.config';
 import {
   goatClient,
@@ -40,7 +42,7 @@ export interface AgentReputation {
 }
 
 export interface ConsoleAgent extends Omit<AgentDefinition, 'registrationTx'> {
-  status: 'live' | 'beta' | 'planned';
+  status: AgentStatus;
   identity: OnChainIdentity;
   reputation: AgentReputation | null;
 }
@@ -52,6 +54,22 @@ export interface AgentsResponse {
   readAt: string;
   blockNumber: string | null;
   note: string;
+  /**
+   * Counts the console used to compute itself, computed here instead.
+   *
+   * The rack was deriving "4 of 6 operational" by filtering a hardcoded
+   * frontend array, which meant the badge could disagree with the API and did.
+   * One source, one number.
+   */
+  counts: {
+    total: number;
+    /** Agents the API implements — the honest operational count. */
+    implemented: number;
+    /** Agents with an ERC-8004 identity on this network. */
+    registered: number;
+    /** Agents that can be paid for over x402. */
+    metered: number;
+  };
 }
 
 const CACHE_TTL_MS = 60_000;
@@ -81,6 +99,7 @@ export class AgentsService {
         readAt: new Date().toISOString(),
         blockNumber: null,
         note: "Couldn't reach the GOAT RPC. On-chain values are hidden rather than guessed.",
+        counts: this.counts(),
       };
       return fallback;
     }
@@ -95,10 +114,29 @@ export class AgentsService {
       readAt: new Date().toISOString(),
       blockNumber: head.toString(),
       note: 'Identity and reputation read live from the ERC-8004 registries on GOAT testnet3.',
+      counts: this.counts(),
     };
 
     this.cache = { at: Date.now(), data };
     return data;
+  }
+
+  /**
+   * Counts derived from the definitions, not from chain reads.
+   *
+   * Deliberately independent of RPC availability: how many agents we have built
+   * is a fact about this codebase, and it should not disappear from the console
+   * because a public RPC endpoint is having a bad day. `registered` comes from
+   * the recorded agentIds for the same reason — those are historical facts, and
+   * the live read enriches them rather than establishing them.
+   */
+  private counts(): AgentsResponse['counts'] {
+    return {
+      total: AGENT_DEFINITIONS.length,
+      implemented: AGENT_DEFINITIONS.filter((d) => d.implemented).length,
+      registered: AGENT_DEFINITIONS.filter((d) => d.agentId !== null).length,
+      metered: AGENT_DEFINITIONS.filter((d) => d.x402Support).length,
+    };
   }
 
   /** Shape for an agent we cannot currently read from chain. */
@@ -106,7 +144,8 @@ export class AgentsService {
     const { registrationTx: _tx, ...rest } = d;
     return {
       ...rest,
-      status: d.agentId ? 'live' : 'beta',
+      // Capability and registration, resolved together — see statusFor().
+      status: statusFor(d),
       identity: {
         agentId: d.agentId,
         network: 'testnet3',
@@ -174,7 +213,7 @@ export class AgentsService {
 
     return {
       ...base,
-      status: 'live',
+      status: statusFor(d),
       identity: {
         ...base.identity,
         owner: owner ?? null,

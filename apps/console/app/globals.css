@@ -76,6 +76,104 @@ body {
   );
 }
 
+/* ── Agent sigil motion ───────────────────────────────────────────────────
+   Six hand-drawn marks, one per agent. The motion vocabulary follows the same
+   rule as the rest of the system: provisional things drift, settled things are
+   still. Every duration here is deliberately long — these are instrument
+   readouts sitting behind text, and anything faster reads as a loading
+   spinner, which is the opposite of what they mean.
+
+   All of it collapses under the prefers-reduced-motion rule at the bottom of
+   this file, and every animated element is aria-hidden in the component. */
+
+@keyframes sigil-sweep {
+  from {
+    transform: rotate(-52deg);
+  }
+  to {
+    transform: rotate(52deg);
+  }
+}
+
+@keyframes sigil-travel {
+  0%,
+  8% {
+    transform: translateX(0);
+  }
+  92%,
+  100% {
+    transform: translateX(26px);
+  }
+}
+
+@keyframes sigil-press {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(2px);
+  }
+}
+
+@keyframes sigil-seat {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-1.5px);
+  }
+}
+
+@keyframes sigil-ring {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes sigil-settle {
+  0%,
+  70%,
+  100% {
+    opacity: 0.35;
+  }
+  35% {
+    opacity: 1;
+  }
+}
+
+.sigil-sweep {
+  transform-origin: 24px 24px;
+  animation: sigil-sweep 5.5s ease-in-out infinite alternate;
+}
+.sigil-travel {
+  animation: sigil-travel 7s ease-in-out infinite alternate;
+}
+.sigil-press {
+  animation: sigil-press 4.5s ease-in-out infinite;
+}
+.sigil-seat {
+  animation: sigil-seat 5s ease-in-out infinite;
+}
+.sigil-ring {
+  transform-origin: 24px 24px;
+  animation: sigil-ring 38s linear infinite;
+}
+.sigil-settle {
+  animation: sigil-settle 4s ease-in-out infinite;
+}
+/* Stagger the three settlement bars so value reads as arriving, not blinking. */
+.sigil-settle-2 {
+  animation-delay: 0.45s;
+}
+.sigil-settle-3 {
+  animation-delay: 0.9s;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -23,3 +23,17 @@ Thumbs.db
 
 # Patch backups
 .patch-backup-*/
+
+# One-shot patch scaffolding (patch3/ … patch16/ and any future ones).
+#
+# Each of these holds an `apply.py` plus full COPIES of the source files it
+# was written to install. Once applied they are stale duplicates of the real
+# files under apps/ — patch15/console/components/PipelineStrip.tsx and
+# patch16/console/components/ConsoleSidebar.tsx, for instance, are both older
+# versions of files that have since been rewritten in place.
+#
+# They were tracked, so anyone browsing the repository — including the
+# ecosystem team reviewing our grant — saw sixteen folders of duplicated
+# source next to the actual apps. Git history keeps them; the working tree
+# should not.
+patch*/

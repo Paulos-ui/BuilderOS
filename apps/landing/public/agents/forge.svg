@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="256" height="256" role="img" stroke-linecap="square" stroke-linejoin="miter">
+  <title>ProofForge — AG-02</title>
+  <desc>Application agent. A ram pressing a draft against an anvil face, with the scored output struck in brass beneath it.</desc>
+  <rect width="48" height="48" fill="#0b1420"/>
+  <g fill="none" stroke="#eae4d3" stroke-width="1" opacity="0.28">
+    <path d="M4 10V4h6"/>
+    <path d="M38 4h6v6"/>
+    <path d="M4 38v6h6"/>
+    <path d="M44 38v6h-6"/>
+  </g>
+  <g fill="none">
+    <g stroke="#eae4d3">
+      <path d="M17 11h14" stroke-width="1.5"/>
+      <path d="M21 11v3.5M27 11v3.5" stroke-width="1" opacity="0.6"/>
+    </g>
+    <g stroke="#eae4d3" stroke-width="1" opacity="0.55">
+      <path d="M19 18h10"/>
+      <path d="M17 22h14"/>
+      <path d="M15 26h18"/>
+    </g>
+    <path d="M12 30h24" stroke="#eae4d3" stroke-width="1.6"/>
+    <path d="M20 30v4M28 30v4" stroke="#eae4d3" stroke-width="1" opacity="0.35"/>
+    <path d="M21 36h6" stroke="#b8863b" stroke-width="1.8"/>
+  </g>
+  <path d="M19 43.5h10" stroke="#b8863b" stroke-width="1.4" fill="none"/>
+</svg>

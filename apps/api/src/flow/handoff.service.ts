@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import type { ApplicationStage } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
@@ -169,36 +170,66 @@ export class HandoffService {
     return { id: row.id, created: true };
   }
 
-  /** Cross-agent overview for the console home. */
+  /**
+   * Cross-agent overview for the console home.
+   *
+   * ── Why these are five separate counts and not one findMany ───────────────
+   *
+   * The previous version fetched `take: 5` rows and then reported
+   * `tracked.length` as `tracking`. A builder with forty open applications saw
+   * "5". Worse, `urgent` was filtered from those same five, so the urgent count
+   * was capped at five as well, and both numbers looked completely plausible —
+   * there is nothing in a "5" that says it was truncated. The console home now
+   * leads with these figures, which makes a silently-wrong total the most
+   * expensive kind of bug in this file.
+   *
+   * ── Overdue is separated from urgent on purpose ──────────────────────────
+   *
+   * The old filter was `(deadline - now) / day <= 7`, which is also true for
+   * every deadline that has already passed. Those rows then supplied
+   * `nextDeadline`, so the console could present a date from last month under
+   * the word "next". Overdue work is genuinely urgent, so it stays counted in
+   * `urgent`, but it is reported separately and `nextDeadline` only ever looks
+   * forward.
+   */
   async pipeline(builderProfileId: string) {
-    const [tracked, proofs, usage] = await Promise.all([
-      this.prisma.trackedApplication.findMany({
-        where: { builderProfileId },
-        orderBy: { deadline: 'asc' },
-        take: 5,
-      }),
-      this.prisma.proofRecord.count({ where: { builderProfileId } }),
-      this.prisma.usageRecord.count({ where: { builderProfileId } }),
-    ]);
+    const now = new Date();
+    const horizon = new Date(now.getTime() + 7 * 86_400_000);
 
-    const now = Date.now();
-    const urgent = tracked.filter(
-      (t) =>
-        t.deadline &&
-        !['WON', 'REJECTED', 'ABANDONED'].includes(t.stage) &&
-        (t.deadline.getTime() - now) / 86_400_000 <= 7,
-    );
+    // Stages where a deadline no longer means anything actionable.
+    const CLOSED: ApplicationStage[] = ['WON', 'REJECTED', 'ABANDONED'];
+    const open = { builderProfileId, stage: { notIn: CLOSED } };
+
+    const [tracking, dueSoon, overdue, next, proofRecords, agentCalls] =
+      await Promise.all([
+        this.prisma.trackedApplication.count({ where: { builderProfileId } }),
+        this.prisma.trackedApplication.count({
+          where: { ...open, deadline: { gte: now, lte: horizon } },
+        }),
+        this.prisma.trackedApplication.count({
+          where: { ...open, deadline: { lt: now } },
+        }),
+        this.prisma.trackedApplication.findFirst({
+          where: { ...open, deadline: { gte: now } },
+          orderBy: { deadline: 'asc' },
+          select: { id: true, title: true, deadline: true },
+        }),
+        this.prisma.proofRecord.count({ where: { builderProfileId } }),
+        this.prisma.usageRecord.count({ where: { builderProfileId } }),
+      ]);
 
     return {
-      tracking: tracked.length,
-      urgent: urgent.length,
-      proofRecords: proofs,
-      agentCalls: usage,
-      nextDeadline: urgent[0]
+      tracking,
+      /** Open applications closing within seven days, plus anything already past due. */
+      urgent: dueSoon + overdue,
+      overdue,
+      proofRecords,
+      agentCalls,
+      nextDeadline: next?.deadline
         ? {
-            title: urgent[0].title,
-            deadline: urgent[0].deadline!.toISOString(),
-            applicationId: urgent[0].id,
+            title: next.title,
+            deadline: next.deadline.toISOString(),
+            applicationId: next.id,
           }
         : null,
     };

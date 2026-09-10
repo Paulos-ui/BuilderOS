@@ -1,70 +1,46 @@
 /**
- * Agent definitions, shared by the rack grid and the launcher panel.
+ * Console-only copy for each agent.
  *
- * `launchPath` is what makes an agent usable rather than merely described.
- * An agent with no launch path is one you can read about but not run, which
- * is why `unavailableReason` has to say something true and specific rather
- * than "coming soon".
+ * ── What lives here and what does not ─────────────────────────────────────
+ *
+ * This file used to duplicate the API: it carried its own `tier`, its own
+ * skills list, its own "AGENT #342 ON GOAT TESTNET3" string, and its own idea
+ * of which agents existed. All four drifted. The rack said BuilderMatch and
+ * BuilderPay were "planned" for weeks after both shipped, and the operational
+ * badge read 4 of 6 because it was counting entries in this array.
+ *
+ * So the split is now strict:
+ *
+ *   From the API (/v1/agents)   which agents exist, status, skills, agent ids,
+ *                               registration, counts — anything checkable
+ *   From this file              the second-person sentences describing what an
+ *                               agent does for you, and where clicking it goes
+ *
+ * If a fact can be verified — by curling an endpoint or reading the chain — it
+ * does not belong here. The API is the source, and it is the thing a reviewer
+ * can independently check.
+ *
+ * `launchPath` is what makes an agent usable rather than merely described. An
+ * agent people can read about but not run is a brochure.
  */
 
-export type Tier = "operational" | "registered" | "development" | "planned";
-
-export const TIER: Record<
-  Tier,
-  { label: string; color: string; description: string }
-> = {
-  operational: {
-    label: "OPERATIONAL",
-    color: "var(--color-signal-bright)",
-    description: "Registered on-chain and serving live requests.",
-  },
-  registered: {
-    label: "REGISTERED",
-    color: "var(--color-brass-bright)",
-    description: "ERC-8004 identity is live; the endpoint is still in build.",
-  },
-  development: {
-    label: "IN DEVELOPMENT",
-    color: "var(--color-line-bright)",
-    description: "Being built. Not registered on-chain yet.",
-  },
-  planned: {
-    label: "PLANNED",
-    color: "var(--color-paper-dim)",
-    description: "Specified in the architecture, not yet started.",
-  },
-};
-
-export interface RackEntry {
-  key: string;
-  code: string;
-  name: string;
-  role: string;
+export interface RackCopy {
+  /** Stage of the funding workflow. Shown as the row's category. */
   stage: string;
+  /** One sentence, second person, no jargon. Shown on the collapsed row. */
   summary: string;
-  capability: string;
-  tier: Tier;
-  skills: string[];
+  /** What it actually does for you. Shown when the row is expanded. */
   responsibilities: string[];
-  /** Where running this agent takes you. Absent means it cannot be run yet. */
-  launchPath?: string;
-  launchLabel?: string;
-  launchHint?: string;
-  unavailableReason?: string;
+  /** Where running this agent takes you. */
+  launchPath: string;
+  launchLabel: string;
 }
 
-export const RACK: RackEntry[] = [
-  {
-    key: "scout",
-    code: "AG-01",
-    name: "BuilderScout",
-    role: "Discovery",
+export const RACK_COPY: Record<string, RackCopy> = {
+  scout: {
     stage: "Discover",
     summary:
       "Finds grants, hackathons and bounties across ecosystem sources and ranks them for you, so you stop hunting through Discords and Notion boards.",
-    capability: "Live feed from Gitcoin, Devpost and GOAT programmes.",
-    tier: "operational",
-    skills: ["opportunity-discovery", "relevance-ranking", "deadline-tracking"],
     responsibilities: [
       "Pulls open opportunities from ecosystem sources every time it runs",
       "Ranks them against your profile, so the relevant ones surface first",
@@ -73,19 +49,11 @@ export const RACK: RackEntry[] = [
     ],
     launchPath: "/console/opportunities",
     launchLabel: "Open opportunity feed",
-    launchHint: "LIVE · UPDATED EACH INGESTION RUN",
   },
-  {
-    key: "forge",
-    code: "AG-02",
-    name: "ProofForge",
-    role: "Application",
+  forge: {
     stage: "Apply",
     summary:
-      "Reviews your application draft before you submit it: scores it against what reviewers reward, flags weak sections, and drafts supporting documents from your own material.",
-    capability: "Live review. Scores your draft against reviewer criteria.",
-    tier: "operational",
-    skills: ["application-scoring", "document-generation", "gap-analysis"],
+      "Reviews your draft before you submit it: scores it against what reviewers reward, flags the weak sections, and drafts supporting documents from your own material.",
     responsibilities: [
       "Scores a draft section by section against real reviewer criteria",
       "Names the specific gaps that would cost you the grant",
@@ -94,86 +62,63 @@ export const RACK: RackEntry[] = [
     ],
     launchPath: "/console/apply",
     launchLabel: "Review an application",
-    launchHint: "LIVE · AGENT #342 ON GOAT TESTNET3",
   },
-  {
-    key: "flow",
-    code: "AG-03",
-    name: "BuilderFlow",
-    role: "Automation",
+  flow: {
     stage: "Build",
     summary:
-      "Keeps track of every deadline, checklist and milestone across all the programmes you are pursuing at once.",
-    capability: "Deadline and milestone automation.",
-    tier: "operational",
-    skills: ["deadline-tracking", "workflow-automation"],
+      "Keeps every deadline, checklist and milestone in one place, across all the programmes you have open at once.",
     responsibilities: [
       "One timeline across every application you have open",
       "Per-programme submission checklists",
       "Reminders before something closes, not after",
+      "Hands a won application straight to BuilderRep as a proof record",
     ],
     launchPath: "/console/track",
     launchLabel: "Open application tracker",
-    launchHint: "LIVE · TRACKS YOUR DEADLINES",
   },
-  {
-    key: "match",
-    code: "AG-04",
-    name: "BuilderMatch",
-    role: "Collaboration",
+  match: {
     stage: "Build",
     summary:
-      "Finds collaborators and mentors for a specific opportunity, matched on what they have actually shipped.",
-    capability: "Needs profile density before it produces useful matches.",
-    tier: "planned",
-    skills: ["collaborator-matching", "team-assembly"],
+      "Finds builders whose strengths cover your gaps — scored on what they have shipped and which ecosystems you share, not on how similar you look.",
     responsibilities: [
-      "Matches on demonstrated work, not self-reported skills",
-      "Assembles teams around a specific opportunity's requirements",
-      "Surfaces mentors with relevant programme experience",
+      "Ranks on complementary skills, so it surfaces people who fill your gaps",
+      "Weights builders working in the same ecosystems as you",
+      "Reads from profile text you control, and skips profiles too thin to judge",
+      "Says when it has too little to go on instead of returning filler matches",
     ],
-    unavailableReason:
-      "Planned. Matching needs a critical mass of builder profiles before it returns anything worth acting on — building it now would produce empty results.",
+    launchPath: "/console/collaborators",
+    launchLabel: "Find collaborators",
   },
-  {
-    key: "rep",
-    code: "AG-05",
-    name: "BuilderRep",
-    role: "Reputation",
+  rep: {
     stage: "Prove",
     summary:
       "Turns the work you complete into a portable record of proof you can carry into the next programme you apply to.",
-    capability: "Proof-of-work records; on-chain anchoring planned.",
-    tier: "operational",
-    skills: ["credential-issuance", "contribution-verification"],
     responsibilities: [
       "Records completed grants and shipped work as structured proof",
-      "Verifies contributions against their source before recording them",
-      "Keeps the record portable, so it survives you leaving the platform",
+      "Marks every record as unverified until something independent attests to it",
+      "Exports the whole record as JSON, so it survives you leaving the platform",
     ],
     launchPath: "/console/proof",
     launchLabel: "Open proof record",
-    launchHint: "LIVE · EXPORTABLE RECORD",
   },
-  {
-    key: "pay",
-    code: "AG-06",
-    name: "BuilderPay",
-    role: "Settlement",
+  pay: {
     stage: "Settle",
     summary:
-      "Settles bounty payouts and grant disbursements over x402 on GOAT Network, so funding moves as fast as the work does.",
-    capability: "Merchant credentials held; wiring follows ProofForge.",
-    tier: "planned",
-    skills: ["x402-settlement", "payout-routing"],
+      "Prices and settles paid agent calls over x402, without ever holding your keys or your balance.",
     responsibilities: [
-      "Settles bounty payouts and micro-grants over x402",
-      "Meters paid agent calls so usage is priced per request",
-      "Reconciles settlement against the work that earned it",
+      "Publishes the price of every metered operation before you run one",
+      "Answers a paid call with a real HTTP 402 challenge, per the x402 spec",
+      "Verifies the payment signature against the asset's own EIP-712 domain",
+      "Rejects a reused authorization, so one signature cannot be spent twice",
+      "Never handles a private key — your wallet signs, we only verify",
     ],
-    unavailableReason:
-      "Planned. Merchant credentials are held, but metering needs a paid service to meter — that arrives with ProofForge.",
+    launchPath: "/console/settlement",
+    launchLabel: "Open settlement ledger",
   },
-];
+};
+
+export function copyFor(key: string): RackCopy | null {
+  return RACK_COPY[key] ?? null;
+}
 
 export const PIPELINE = ["Discover", "Apply", "Build", "Prove", "Settle"] as const;

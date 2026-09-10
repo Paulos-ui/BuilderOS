@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="256" height="256" role="img" stroke-linecap="square" stroke-linejoin="miter">
+  <title>BuilderRep — AG-05</title>
+  <desc>Reputation agent. A seal still accruing: a broken outer ring, a stack of evidence chevrons inside, and a brass index notch at twelve o'clock where a credential is struck.</desc>
+  <rect width="48" height="48" fill="#0b1420"/>
+  <g fill="none" stroke="#eae4d3" stroke-width="1" opacity="0.28">
+    <path d="M4 10V4h6"/>
+    <path d="M38 4h6v6"/>
+    <path d="M4 38v6h6"/>
+    <path d="M44 38v6h-6"/>
+  </g>
+  <g fill="none">
+    <circle cx="24" cy="24" r="15" stroke="#eae4d3" stroke-width="1" stroke-dasharray="3 4" opacity="0.4"/>
+    <circle cx="24" cy="24" r="10" stroke="#eae4d3" stroke-width="1.2"/>
+    <path d="M24 14v-4" stroke="#b8863b" stroke-width="1.4"/>
+    <path d="M18.5 26.5L24 20l5.5 6.5" stroke="#eae4d3" stroke-width="1.5"/>
+    <path d="M20.5 30.5L24 26.5l3.5 4" stroke="#eae4d3" stroke-width="1.2" opacity="0.45"/>
+  </g>
+  <path d="M19 43.5h10" stroke="#b8863b" stroke-width="1.4" fill="none"/>
+</svg>
